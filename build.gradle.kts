@@ -12,16 +12,12 @@ subprojects {
     apply<SpotlessPlugin>()
     configure<SpotlessExtension> {
         kotlin {
-            // by default the target is every '.kt' and '.kts` file in the java sourcesets
-            ktfmt()    // has its own section below
-            ktlint()   // has its own section below
-            diktat()   // has its own section below
-            prettier() // has its own section below
-            // TODO : licenseHeader '/* (C)$YEAR */'
+            ktlint()
+            licenseHeaderFile(rootProject.file("spotless/copyright.kt"))
         }
         kotlinGradle {
-            target("*.gradle.kts") // default target for kotlinGradle
-            ktlint() // or ktfmt() or prettier()
+            target("*.gradle.kts")
+            ktlint()
         }
     }
 }
