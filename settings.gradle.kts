@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "WSProtobuf"
 include(":app")
- 
+include(":annotation")
+include(":processor")

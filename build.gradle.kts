@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.spotless) apply true
+    alias(libs.plugins.jetbrains.kotlin.jvm) apply false
 }
 
 subprojects {
@@ -13,7 +14,6 @@ subprojects {
     configure<SpotlessExtension> {
         kotlin {
             ktlint()
-            licenseHeaderFile(rootProject.file("spotless/copyright.kt"))
         }
         kotlinGradle {
             target("*.gradle.kts")

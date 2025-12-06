@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   test_and_apk:
-    name: "Local tests and APKs"
+    name: "CI / CD test"
     runs-on: ubuntu-latest
 
     permissions:
@@ -57,8 +57,8 @@ jobs:
       - name: Build app
         run: ./gradlew :app:assemble -PminifyWithR8=false
 
-      - name: Upload build outputs (APKs)
-        uses: actions/upload-artifact@v4
-        with:
-          name: APKs
-          path: '**/build/outputs/apk/**/*.apk'
+#      - name: Upload build outputs (APKs)
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: APKs
+#          path: '**/build/outputs/apk/**/*.apk'
