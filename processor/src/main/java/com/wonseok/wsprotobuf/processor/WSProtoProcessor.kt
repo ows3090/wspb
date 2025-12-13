@@ -17,7 +17,7 @@ import java.io.OutputStream
 class WSProtoProcessor(
     private val codeGenerator: CodeGenerator,
     private val logger: KSPLogger,
-    private val options: Map<String, String>
+    private val options: Map<String, String>,
 ) : SymbolProcessor {
 
     operator fun OutputStream.plusAssign(str: String) {
@@ -37,7 +37,7 @@ class WSProtoProcessor(
     }
 
     inner class ProtoVisitor(
-        private val resolver: Resolver
+        private val resolver: Resolver,
     ) : KSVisitorVoid() {
         var file: OutputStream? = null
 
@@ -81,7 +81,7 @@ class WSProtoProcessor(
                 dependencies = Dependencies(false, *resolver.getAllFiles().toList().toTypedArray()),
                 packageName = "com.wonseok.wsprotobuf",
                 fileName = fileName,
-                extensionName = "proto"
+                extensionName = "proto",
             )
 
             file!! += "syntax = \"proto3\";\n\n"
