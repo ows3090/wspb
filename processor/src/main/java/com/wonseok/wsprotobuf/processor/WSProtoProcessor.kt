@@ -30,8 +30,9 @@ class WSProtoProcessor(
         val symbols = resolver
             .getSymbolsWithAnnotation("com.wonseok.wsprotobuf.annotation.WSProto")
             .filterIsInstance<KSClassDeclaration>()
+            .toList()
 
-        if (!symbols.iterator().hasNext()) return emptyList()
+        if (symbols.isEmpty()) return emptyList()
         symbols.forEach { it.accept(ProtoVisitor(resolver), Unit) }
         return symbols.filterNot { it.validate() }.toList()
     }
@@ -98,6 +99,7 @@ class WSProtoProcessor(
             }
 
             file!! += "}"
+            file?.close()
         }
 
         override fun visitPropertyDeclaration(property: KSPropertyDeclaration, data: Unit) {
@@ -106,8 +108,8 @@ class WSProtoProcessor(
             val ksType = property.type.resolve()
             val argType = getProtoTypeName(ksType)
             var argName = ""
-            property.simpleName.asString().forEach { ch ->
-                if (ch.isTitleCase()) {
+            property.simpleName.asString().forEachIndexed { index, ch ->
+                if (ch.isUpperCase() && index > 0) {
                     argName += "_"
                 }
                 argName += ch.lowercase()
@@ -131,13 +133,13 @@ class WSProtoProcessor(
                     "repeated ${getProtoTypeName(type)}"
                 } ?: run {
                     logger.error("Unsupported type: $kotlinType")
-                    ""
+                    throw IllegalArgumentException("Unsupported type: $kotlinType")
                 }
             }
 
             else -> {
                 logger.error("Unsupported type: $kotlinType")
-                ""
+                throw IllegalArgumentException("Unsupported type: $kotlinType")
             }
         }
     }
