@@ -7,13 +7,22 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.spotless) apply true
     alias(libs.plugins.jetbrains.kotlin.jvm) apply false
+    alias(libs.plugins.compose.compiler) apply false
 }
 
 subprojects {
     apply<SpotlessPlugin>()
     configure<SpotlessExtension> {
         kotlin {
-            ktlint()
+            ktlint().apply {
+                editorConfigOverride(
+                    mapOf(
+                        "trailing-comma" to "disabled",
+                        "experimental:trailing-comma-on-declaration-site" to "disabled",
+                        "experimental:trailing-comma-on-call-site" to "disabled"
+                    )
+                )
+            }
         }
         kotlinGradle {
             target("*.gradle.kts")
