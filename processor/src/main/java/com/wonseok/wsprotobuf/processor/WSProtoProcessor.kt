@@ -80,7 +80,7 @@ class WSProtoProcessor(
 
             file = codeGenerator.createNewFile(
                 dependencies = Dependencies(false, *resolver.getAllFiles().toList().toTypedArray()),
-                packageName = "com.wonseok.wsprotobuf",
+                packageName = "proto/com/wonseok/wsprotobuf",
                 fileName = fileName,
                 extensionName = "proto",
             )

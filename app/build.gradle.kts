@@ -1,9 +1,12 @@
+import com.google.protobuf.gradle.proto
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.wsprotobuf.proto)
+    alias(libs.plugins.protobuf)
 }
 
 android {
@@ -42,6 +45,14 @@ android {
         compose = true
         buildConfig = true
     }
+
+//    sourceSets {
+//        getByName("debug") {
+//            proto {
+//                srcDir("build/generated/ksp/debug/resources/proto")
+//            }
+//        }
+//    }
 }
 
 dependencies {

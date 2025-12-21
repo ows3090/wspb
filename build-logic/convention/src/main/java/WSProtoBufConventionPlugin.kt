@@ -1,8 +1,10 @@
+import com.android.build.api.variant.AndroidComponentsExtension
+import com.android.build.gradle.BaseExtension
 import com.google.protobuf.gradle.ProtobufExtension
+import com.google.protobuf.gradle.proto
 import com.wonseok.convention.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 
@@ -11,6 +13,14 @@ class WSProtoBufConventionPlugin : Plugin<Project> {
         with(project) {
             with(plugins) {
                 apply(libs.findPlugin("protobuf").get().get().pluginId)
+
+                withId(libs.findPlugin("android-application").get().get().pluginId) {
+                    configureProtoSourceSets()
+                }
+
+                withId(libs.findPlugin("android-library").get().get().pluginId) {
+                    configureProtoSourceSets()
+                }
             }
 
             configure<ProtobufExtension> {
@@ -21,9 +31,6 @@ class WSProtoBufConventionPlugin : Plugin<Project> {
                 generateProtoTasks {
                     all().forEach { task ->
                         task.builtins {
-                            register("kotlin") {
-                                option("lite")
-                            }
                             register("java") {
                                 option("lite")
                             }
@@ -34,6 +41,27 @@ class WSProtoBufConventionPlugin : Plugin<Project> {
 
             dependencies {
                 add("implementation", libs.findLibrary("protobuf-kotlin-lite").get())
+            }
+
+            plugins.withId("com.android.application") {
+                configureProtoSourceSets()
+            }
+        }
+    }
+
+    private fun Project.configureProtoSourceSets() {
+        extensions.configure<AndroidComponentsExtension<*, *, *>>("androidComponents") {
+            onVariants { variant ->
+                val protoDir =
+                    layout.buildDirectory.dir("generated/ksp/${variant.name}/resources/proto")
+
+                extensions.configure<BaseExtension>("android") {
+                    sourceSets.getByName(variant.name) {
+                        proto {
+                            srcDir(protoDir)
+                        }
+                    }
+                }
             }
         }
     }
