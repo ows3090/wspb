@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      content: read
       pull-requests: write
 
     timeout-minutes: 60

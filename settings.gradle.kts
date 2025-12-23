@@ -20,7 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "WSProtobuf"
-include(":app")
-include(":annotation")
-include(":processor")
+rootProject.name = "wspb"
+include(":sample-app")
+include(":wspb-annotation")
+include(":wspb-processor")

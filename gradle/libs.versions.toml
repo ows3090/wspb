@@ -54,7 +54,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 
 ## cus†om gradle plugin
-wsprotobuf-proto = { id = "wsprotobuf.proto" }
+wspb-proto = { id = "wspb.proto" }
 
 [bundles]
 compose = [

@@ -17,7 +17,7 @@ dependencies {
 gradlePlugin {
     plugins {
         register("wonseokProtoBuf") {
-            id = libs.plugins.wsprotobuf.proto.get().pluginId
+            id = libs.plugins.wspb.proto.get().pluginId
             implementationClass = "WSProtoBufConventionPlugin"
         }
     }

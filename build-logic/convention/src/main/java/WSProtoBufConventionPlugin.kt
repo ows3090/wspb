@@ -42,10 +42,6 @@ class WSProtoBufConventionPlugin : Plugin<Project> {
             dependencies {
                 add("implementation", libs.findLibrary("protobuf-kotlin-lite").get())
             }
-
-            plugins.withId("com.android.application") {
-                configureProtoSourceSets()
-            }
         }
     }
 
