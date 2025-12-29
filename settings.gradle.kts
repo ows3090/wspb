@@ -1,5 +1,4 @@
 pluginManagement {
-    includeBuild("build-logic")
     repositories {
         google {
             content {
@@ -9,6 +8,7 @@ pluginManagement {
             }
         }
         mavenCentral()
+        mavenLocal()
         gradlePluginPortal()
     }
 }
@@ -17,6 +17,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        mavenLocal()
     }
 }
 
@@ -24,3 +25,4 @@ rootProject.name = "wspb"
 include(":sample-app")
 include(":wspb-annotation")
 include(":wspb-processor")
+include(":wspb-gradle-plugin")

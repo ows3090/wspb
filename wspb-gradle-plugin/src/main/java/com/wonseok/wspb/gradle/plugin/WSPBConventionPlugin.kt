@@ -1,3 +1,5 @@
+package com.wonseok.wspb.gradle.plugin
+
 import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.gradle.BaseExtension
 import com.google.protobuf.gradle.ProtobufExtension
@@ -8,7 +10,7 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 
-class WSProtoBufConventionPlugin : Plugin<Project> {
+class WSPBConventionPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         with(project) {
             with(plugins) {

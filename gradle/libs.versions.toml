@@ -6,6 +6,7 @@ spotless = "7.2.1"
 jetbrainsKotlinJvm = "2.0.21"
 ksp = "2.0.21-1.0.27"
 protobufPlugin = "0.9.5"
+wspb = "1.0.0"
 
 ## libraries
 coreKtx = "1.17.0"
@@ -42,7 +43,6 @@ android-tools-common = { group = "com.android.tools", name = "common", version.r
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 protobuf-gradlePlugin = { group = "com.google.protobuf", name = "protobuf-gradle-plugin", version.ref = "protobufPlugin" }
 
-
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -54,7 +54,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 
 ## cus†om gradle plugin
-wspb-proto = { id = "wspb.proto" }
+wspb-proto = { id = "wspb.proto", version.ref = "wspb" }
 
 [bundles]
 compose = [
