@@ -46,6 +46,10 @@ gen-external-apklibs
 # Compiled class file
 *.class
 
+# Compiler caches
+**/.kotlin/
+**/kotlin-compiler-*
+
 # Log file
 
 # BlueJ files

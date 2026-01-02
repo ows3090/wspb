@@ -12,16 +12,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test_and_apk:
-    name: "CI / CD test"
+  build_and_test:
+    name: "Build & Test"
     runs-on: ubuntu-latest
-
     permissions:
-      content: read
       pull-requests: write
-
     timeout-minutes: 60
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,18 +31,14 @@ jobs:
           distribution: 'zulu'
           java-version: 21
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          build-scan-publish: true
-          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
-          build-scan-terms-of-use-agree: "yes"
+      - name: Publish Plugin to MavenLocal
+        run: ./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand --no-daemon
 
       - name: Check spotless
         run: ./gradlew spotlessCheck --no-configuration-cache
 
       - name: Check lint
-        run: ./gradlew :app:lint
+        run: ./gradlew lint
 
       - name: Upload lint reports (HTML)
         if: ${{ !cancelled() }}
@@ -56,10 +48,4 @@ jobs:
           path: '**/build/reports/lint-results-*.html'
 
       - name: Build app
-        run: ./gradlew :app:assemble -PminifyWithR8=false
-
-#      - name: Upload build outputs (APKs)
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: APKs
-#          path: '**/build/outputs/apk/**/*.apk'
+        run: ./gradlew :sample-app:assemble -PminifyWithR8=false --no-daemon
