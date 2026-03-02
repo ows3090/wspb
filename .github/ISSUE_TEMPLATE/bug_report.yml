@@ -1,18 +1,53 @@
 name: Bug Report
-description: File a bug report
-title: "[Bug]: "
+description: Report a bug or unexpected behavior
+title: "[Bug] "
 labels: ["bug", "triage me"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report!
+        Thanks for reporting this issue.
+        Reproducible information helps us resolve issues faster.
   - type: textarea
-    id: what-happened
+    id: summary
     attributes:
-      label: What happened?
-      description: Also tell us, what did you expect to happen?
-      placeholder: Tell us what you see!
-      value: "A bug happened!"
+      label: Summary
+      description: What happened and what did you expect?
+      placeholder: e.g. build fails after applying wspb.proto plugin
     validations:
       required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Provide versions used in your environment.
+      placeholder: |
+        - OS:
+        - JDK:
+        - Gradle:
+        - AGP:
+        - Kotlin:
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: List minimal steps in order.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Paste the error stacktrace or build output.
+      render: shell
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Context
+      description: Links, screenshots, or related issue references.
