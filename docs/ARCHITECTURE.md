@@ -29,6 +29,10 @@ WSPB는 Android 프로젝트에서 Kotlin 모델 선언을 기준으로 Protobuf
 1. 사용자가 클래스에 `@WSProto(name = "...")` 선언
 2. KSP가 `.proto` 생성
    - 경로: `build/generated/ksp/<variant>/resources/proto/com/wonseok/wspb`
+   - KSP 옵션으로 경로/옵션 오버라이드 가능:
+     - `wspb.proto.packagePath`
+     - `wspb.proto.javaPackage`
+     - `wspb.processor.verbose`
 3. Gradle plugin이 위 경로를 Android variant proto sourceSet으로 등록
 4. Protobuf plugin이 `protoc`로 Java lite 소스 생성
    - 경로: `build/generated/sources/proto/<variant>/java`
@@ -40,8 +44,6 @@ WSPB는 Android 프로젝트에서 Kotlin 모델 선언을 기준으로 Protobuf
 
 ## 현재 제약
 - 타입 지원 범위 제한(기본 타입 + `List/Set/Array`)
-- `.proto` 패키지/옵션 커스터마이징 제한
-- KSP 로그가 기본적으로 verbose
 - 로컬 개발 시 `mavenLocal` 플러그인 해석에 영향을 받을 수 있음
 
 ## 개선 우선순위 제안

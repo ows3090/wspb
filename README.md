@@ -30,6 +30,16 @@ data class UserData(
 )
 ```
 
+KSP 옵션으로 생성 패키지/로그를 커스터마이징할 수 있습니다.
+```kotlin
+ksp {
+    arg("wspb.proto.packagePath", "proto/com/example/schema")
+    arg("wspb.proto.javaPackage", "com.example.schema")
+    arg("wspb.processor.verbose", "true")
+}
+```
+옵션 미지정 시 기본값은 기존과 동일합니다.
+
 생성 결과(예):
 - `build/generated/ksp/debug/resources/proto/com/wonseok/wspb/user_preference.proto`
 - `build/generated/sources/proto/debug/java/com/wonseok/wspb/UserPreference.java`

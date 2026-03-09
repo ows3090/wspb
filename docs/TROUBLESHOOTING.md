@@ -40,4 +40,18 @@
 - KSP 프로세서가 `logger.warn(...)`를 다수 출력
 
 대응:
-- 필요 시 프로세서 로깅 레벨/조건을 조정
+- `ksp { arg("wspb.processor.verbose", "false") }`로 비활성화 (기본값도 `false`)
+
+## 6) 커스텀 패키지 옵션이 반영되지 않음
+점검:
+1. 앱 모듈에 `ksp` 블록이 선언되어 있는지 확인
+2. 옵션 키 오탈자 확인
+   - `wspb.proto.packagePath`
+   - `wspb.proto.javaPackage`
+3. 값이 공백 문자열인지 확인
+
+원인:
+- 공백 문자열 또는 잘못된 값이면 프로세서가 기본값으로 fallback합니다.
+
+대응:
+- 유효한 문자열/불리언 값으로 다시 설정 후 빌드합니다.
