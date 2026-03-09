@@ -91,32 +91,42 @@ class WSProtoProcessor(
                 return
             }
 
-            file = codeGenerator.createNewFile(
+            val outputFile = codeGenerator.createNewFile(
                 dependencies = Dependencies(false, *resolver.getAllFiles().toList().toTypedArray()),
                 packageName = processorOptions.protoPackagePath,
                 fileName = fileName,
                 extensionName = "proto",
             )
+            file = outputFile
 
-            file!! += "syntax = \"proto3\";\n\n"
-            file!! += "option java_package = \"${processorOptions.protoJavaPackage}\";\n"
-            file!! += "option java_multiple_files = true;\n\n"
-            file!! += "message $pascalCaseName {\n"
+            try {
+                outputFile += "syntax = \"proto3\";\n\n"
+                outputFile += "option java_package = \"${processorOptions.protoJavaPackage}\";\n"
+                outputFile += "option java_multiple_files = true;\n\n"
+                outputFile += "message $pascalCaseName {\n"
 
-            val properties = classDeclaration.getAllProperties().filter { it.validate() }
-            if (properties.iterator().hasNext()) {
-                properties.forEachIndexed { index, property ->
-                    visitPropertyDeclaration(property, Unit)
-                    file!! += "${index + 1};\n"
+                val properties = classDeclaration.getAllProperties().filter { it.validate() }
+                if (properties.iterator().hasNext()) {
+                    properties.forEachIndexed { index, property ->
+                        visitPropertyDeclaration(property, Unit)
+                        outputFile += "${index + 1};\n"
+                    }
                 }
-            }
 
-            file!! += "}"
-            file?.close()
+                outputFile += "}"
+            } finally {
+                outputFile.close()
+                file = null
+            }
         }
 
         override fun visitPropertyDeclaration(property: KSPropertyDeclaration, data: Unit) {
             verboseLog("WSProtoProcessor visitPropertyDeclaration")
+            val currentFile = file
+            if (currentFile == null) {
+                logger.error("Internal error: output stream is unavailable for property '${property.simpleName.asString()}'")
+                return
+            }
 
             val ksType = property.type.resolve()
             val argType = getProtoTypeName(ksType)
@@ -127,7 +137,7 @@ class WSProtoProcessor(
                 }
                 argName += ch.lowercase()
             }
-            file!! += "    $argType $argName = "
+            currentFile += "    $argType $argName = "
         }
     }
 
