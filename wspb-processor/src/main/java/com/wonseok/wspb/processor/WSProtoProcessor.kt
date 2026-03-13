@@ -12,23 +12,36 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSVisitorVoid
 import com.google.devtools.ksp.validate
+import com.wonseok.wspb.annotation.WSProto
 import java.io.OutputStream
 
 class WSProtoProcessor(
     private val codeGenerator: CodeGenerator,
     private val logger: KSPLogger,
-    private val options: Map<String, String>,
+    options: Map<String, String>,
 ) : SymbolProcessor {
+    private val processorOptions = ProcessorOptions.from(options, logger)
+    private val annotationFqName = WSProto::class.qualifiedName ?: FALLBACK_ANNOTATION_FQ_NAME
+
+    companion object {
+        private const val FALLBACK_ANNOTATION_FQ_NAME = "com.wonseok.wspb.annotation.WSProto"
+    }
+
+    private fun verboseLog(message: String) {
+        if (processorOptions.verbose) {
+            logger.warn(message)
+        }
+    }
 
     operator fun OutputStream.plusAssign(str: String) {
         this.write(str.toByteArray())
     }
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        logger.warn("WSProtoProcessor process")
+        verboseLog("WSProtoProcessor process")
 
         val symbols = resolver
-            .getSymbolsWithAnnotation("com.wonseok.wspb.annotation.WSProto")
+            .getSymbolsWithAnnotation(annotationFqName)
             .filterIsInstance<KSClassDeclaration>()
             .toList()
 
@@ -43,7 +56,7 @@ class WSProtoProcessor(
         var file: OutputStream? = null
 
         override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
-            logger.warn("WSProtoProcessor visitClassDeclaration")
+            verboseLog("WSProtoProcessor visitClassDeclaration")
 
             // Only class can be annotated with @WSProto
             if (classDeclaration.classKind != ClassKind.CLASS) {
@@ -78,32 +91,42 @@ class WSProtoProcessor(
                 return
             }
 
-            file = codeGenerator.createNewFile(
+            val outputFile = codeGenerator.createNewFile(
                 dependencies = Dependencies(false, *resolver.getAllFiles().toList().toTypedArray()),
-                packageName = "proto/com/wonseok/wspb",
+                packageName = processorOptions.protoPackagePath,
                 fileName = fileName,
                 extensionName = "proto",
             )
+            file = outputFile
 
-            file!! += "syntax = \"proto3\";\n\n"
-            file!! += "option java_package = \"com.wonseok.wspb\";\n"
-            file!! += "option java_multiple_files = true;\n\n"
-            file!! += "message $pascalCaseName {\n"
+            try {
+                outputFile += "syntax = \"proto3\";\n\n"
+                outputFile += "option java_package = \"${processorOptions.protoJavaPackage}\";\n"
+                outputFile += "option java_multiple_files = true;\n\n"
+                outputFile += "message $pascalCaseName {\n"
 
-            val properties = classDeclaration.getAllProperties().filter { it.validate() }
-            if (properties.iterator().hasNext()) {
-                properties.forEachIndexed { index, property ->
-                    visitPropertyDeclaration(property, Unit)
-                    file!! += "${index + 1};\n"
+                val properties = classDeclaration.getAllProperties().filter { it.validate() }
+                if (properties.iterator().hasNext()) {
+                    properties.forEachIndexed { index, property ->
+                        visitPropertyDeclaration(property, Unit)
+                        outputFile += "${index + 1};\n"
+                    }
                 }
-            }
 
-            file!! += "}"
-            file?.close()
+                outputFile += "}"
+            } finally {
+                outputFile.close()
+                file = null
+            }
         }
 
         override fun visitPropertyDeclaration(property: KSPropertyDeclaration, data: Unit) {
-            logger.warn("WSProtoProcessor visitPropertyDeclaration")
+            verboseLog("WSProtoProcessor visitPropertyDeclaration")
+            val currentFile = file
+            if (currentFile == null) {
+                logger.error("Internal error: output stream is unavailable for property '${property.simpleName.asString()}'")
+                return
+            }
 
             val ksType = property.type.resolve()
             val argType = getProtoTypeName(ksType)
@@ -114,7 +137,7 @@ class WSProtoProcessor(
                 }
                 argName += ch.lowercase()
             }
-            file!! += "    $argType $argName = "
+            currentFile += "    $argType $argName = "
         }
     }
 
@@ -145,7 +168,7 @@ class WSProtoProcessor(
     }
 
     override fun finish() {
-        logger.warn("WSProtoProcessor finish")
+        verboseLog("WSProtoProcessor finish")
         super.finish()
     }
 

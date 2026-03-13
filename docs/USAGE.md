@@ -32,13 +32,30 @@ data class UserData(
 )
 ```
 
-## 3) 빌드
+## 3) KSP 옵션으로 패키지 커스터마이징 (선택)
+옵션을 지정하지 않으면 기존 기본값이 사용됩니다.
+
+```kotlin
+ksp {
+    arg("wspb.proto.packagePath", "proto/com/example/schema")
+    arg("wspb.proto.javaPackage", "com.example.schema")
+    arg("wspb.processor.verbose", "true")
+}
+```
+
+- `wspb.proto.packagePath` 기본값: `proto/com/wonseok/wspb`
+- `wspb.proto.javaPackage` 기본값: `com.wonseok.wspb`
+- `wspb.processor.verbose` 기본값: `false`
+
+## 4) 빌드
 ```bash
 ./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand
 ./gradlew :sample-app:assembleDebug
 ```
 
-## 4) 생성 산출물 확인
+## 5) 생성 산출물 확인
+아래 경로는 기본값 기준이며, `wspb.proto.packagePath` 설정 시 하위 경로가 달라질 수 있습니다.
+
 - KSP 생성 proto:
   - `sample-app/build/generated/ksp/debug/resources/proto/com/wonseok/wspb/*.proto`
 - Protobuf 생성 Java lite:

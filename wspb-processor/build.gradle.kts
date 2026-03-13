@@ -15,4 +15,5 @@ kotlin {
 dependencies {
     implementation(project(":wspb-annotation"))
     implementation(libs.ksp.api)
+    testImplementation(libs.junit)
 }

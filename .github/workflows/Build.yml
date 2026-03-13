@@ -16,6 +16,7 @@ jobs:
     name: "Build & Test"
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: write
     timeout-minutes: 60
     steps:
