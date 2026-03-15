@@ -2,7 +2,10 @@ plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
     `maven-publish`
+    alias(libs.plugins.plugin.publish)
 }
+
+description = "Gradle plugin that wires generated proto sources into Android builds."
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -17,25 +20,24 @@ dependencies {
 }
 
 gradlePlugin {
+    website = providers.gradleProperty("POM_URL").get()
+    vcsUrl = providers.gradleProperty("POM_SCM_URL").get()
+
     plugins {
-        register("wspbConventionPlugin") {
-            id =
-                libs.plugins.wspb.proto
-                    .get()
-                    .pluginId
+        register("wspbConventionPluginLegacy") {
+            id = providers.gradleProperty("WSPB_LEGACY_PLUGIN_ID").get()
+            displayName = "wspb proto plugin (legacy id)"
+            description = project.description
+            tags.set(listOf("protobuf", "ksp", "android"))
             implementationClass = "com.wonseok.wspb.gradle.plugin.WSPBConventionPlugin"
         }
-    }
-}
 
-group = "com.wonseok.wspb.plugins"
-version = "1.0.0"
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-            artifactId = "wspb-gradle-plugin"
+        register("wspbConventionPlugin") {
+            id = providers.gradleProperty("WSPB_PLUGIN_ID").get()
+            displayName = "wspb proto plugin"
+            description = project.description
+            tags.set(listOf("protobuf", "ksp", "android"))
+            implementationClass = "com.wonseok.wspb.gradle.plugin.WSPBConventionPlugin"
         }
     }
 }
