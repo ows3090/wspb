@@ -1,39 +1,42 @@
 # Usage Guide
 
-## 전제
-이 저장소 기준 사용 시나리오는 "멀티모듈 내부 소비"입니다.  
-(`sample-app`이 실제 예시)
+## Audience
 
-## 1) 모듈/플러그인 적용
-앱 모듈 `build.gradle.kts`에 다음을 설정합니다.
+This guide is for Android projects consuming a published `wspb` release.
+
+If you are working inside this repository itself, use the local development flow from [README.md](../README.md) instead.
+
+## Installation
 
 ```kotlin
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.wspb.proto)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
+    id("io.github.ows3090.wspb.proto") version "1.0.0"
 }
 
 dependencies {
-    implementation(project(":wspb-annotation"))
-    ksp(project(":wspb-processor"))
+    implementation("io.github.ows3090:wspb-annotation:1.0.0")
+    ksp("io.github.ows3090:wspb-processor:1.0.0")
 }
 ```
 
-## 2) 모델 선언
+The snippets above describe the intended public-consumer setup. Until the first public release is published, those coordinates are not yet available from a remote repository.
+
+## Declare a Model
+
 ```kotlin
 import com.wonseok.wspb.annotation.WSProto
 
 @WSProto(name = "user_preference")
 data class UserData(
     val id: Int,
-    val name: String
+    val name: String,
 )
 ```
 
-## 3) KSP 옵션으로 패키지 커스터마이징 (선택)
-옵션을 지정하지 않으면 기존 기본값이 사용됩니다.
+## Optional KSP Configuration
 
 ```kotlin
 ksp {
@@ -43,25 +46,29 @@ ksp {
 }
 ```
 
-- `wspb.proto.packagePath` 기본값: `proto/com/wonseok/wspb`
-- `wspb.proto.javaPackage` 기본값: `com.wonseok.wspb`
-- `wspb.processor.verbose` 기본값: `false`
+Option reference:
 
-## 4) 빌드
-```bash
-./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand
-./gradlew :sample-app:assembleDebug
-```
+- `wspb.proto.packagePath`: generated `.proto` output subdirectory
+- `wspb.proto.javaPackage`: `option java_package` value written into generated `.proto` files
+- `wspb.processor.verbose`: enables processor warning logs
 
-## 5) 생성 산출물 확인
-아래 경로는 기본값 기준이며, `wspb.proto.packagePath` 설정 시 하위 경로가 달라질 수 있습니다.
+Defaults:
 
-- KSP 생성 proto:
-  - `sample-app/build/generated/ksp/debug/resources/proto/com/wonseok/wspb/*.proto`
-- Protobuf 생성 Java lite:
-  - `sample-app/build/generated/sources/proto/debug/java/com/wonseok/wspb/*.java`
+- `wspb.proto.packagePath = proto/com/wonseok/wspb`
+- `wspb.proto.javaPackage = com.wonseok.wspb`
+- `wspb.processor.verbose = false`
 
-## 타입 매핑
+## Generated Output
+
+Default output locations:
+
+- KSP `.proto` files: `build/generated/ksp/<variant>/resources/proto/com/wonseok/wspb`
+- Protobuf Java lite sources: `build/generated/sources/proto/<variant>/java`
+
+If you override `wspb.proto.packagePath`, the generated `.proto` subdirectory changes accordingly.
+
+## Type Mapping
+
 - `Int`, `Short`, `Byte` -> `int32`
 - `Long` -> `int64`
 - `Float` -> `float`
@@ -71,11 +78,23 @@ ksp {
 - `ByteArray` -> `bytes`
 - `List<T>`, `Set<T>`, `Array<T>` -> `repeated <mapped(T)>`
 
-## 네이밍 규칙
-- 파일명: `@WSProto(name = "...")` 값 사용
-- 메시지명: `snake_case` -> `PascalCase` 변환
-- 필드명: 클래스 프로퍼티를 `snake_case`로 변환
+## Naming Rules
 
-## 제한사항
-- 미지원 타입 사용 시 오류 발생
-- 클래스명과 변환된 메시지명이 같으면 오류 발생
+- File name: uses `@WSProto(name = "...")`
+- Message name: converts `snake_case` into `PascalCase`
+- Field name: converts Kotlin property names into `snake_case`
+
+## Current Limitations
+
+- Unsupported field types fail the processor
+- Message names that match the annotated class name are rejected
+- Enum, custom message, and richer nullable support are not implemented yet
+
+## Compatibility Baseline
+
+Repository-validated baseline:
+
+- JDK 21
+- Kotlin 2.0.21
+- KSP 2.0.21-1.0.27
+- AGP 8.13.1

@@ -27,7 +27,5 @@
 
 ## 문서 위치
 - 개요/빠른 시작: `README.md`
-- 설계: `docs/ARCHITECTURE.md`
 - 사용법: `docs/USAGE.md`
-- 개발/기여: `docs/DEVELOPMENT.md`
-- 트러블슈팅: `docs/TROUBLESHOOTING.md`
+- 기여: `CONTRIBUTING.md`
