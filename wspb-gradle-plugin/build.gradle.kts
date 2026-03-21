@@ -2,6 +2,7 @@ plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
     `maven-publish`
+    signing
     alias(libs.plugins.plugin.publish)
 }
 
@@ -24,14 +25,6 @@ gradlePlugin {
     vcsUrl = providers.gradleProperty("POM_SCM_URL").get()
 
     plugins {
-        register("wspbConventionPluginLegacy") {
-            id = providers.gradleProperty("WSPB_LEGACY_PLUGIN_ID").get()
-            displayName = "wspb proto plugin (legacy id)"
-            description = project.description
-            tags.set(listOf("protobuf", "ksp", "android"))
-            implementationClass = "com.wonseok.wspb.gradle.plugin.WSPBConventionPlugin"
-        }
-
         register("wspbConventionPlugin") {
             id = providers.gradleProperty("WSPB_PLUGIN_ID").get()
             displayName = "wspb proto plugin"

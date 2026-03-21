@@ -4,6 +4,7 @@ plugins {
     id("java-library")
     alias(libs.plugins.jetbrains.kotlin.jvm)
     `maven-publish`
+    signing
 }
 
 description = "@WSProto annotation definitions for wspb."

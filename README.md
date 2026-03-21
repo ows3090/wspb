@@ -28,8 +28,6 @@ plugins {
 }
 ```
 
-For local repository development inside this repo, the sample app still uses the legacy id `wspb.proto`.
-
 ## Quick Start
 
 The example below shows the intended public-consumer setup after the first release is published.

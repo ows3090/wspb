@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: "Publish Release"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 90
+    env:
+      RELEASE_VERSION: ${{ github.ref_name }}
+      CENTRAL_NAMESPACE: io.github.ows3090
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: 21
+
+      - name: Prepare project Gradle directory
+        run: mkdir -p .gradle && cp .github/ci-gradle.properties .gradle/gradle.properties
+
+      - name: Resolve release version
+        run: echo "WSPB_VERSION=${RELEASE_VERSION#v}" >> "$GITHUB_ENV"
+
+      - name: Validate release secrets
+        env:
+          CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+        run: |
+          set -euo pipefail
+          required_vars=(
+            CENTRAL_PORTAL_USERNAME
+            CENTRAL_PORTAL_PASSWORD
+            SIGNING_KEY
+            SIGNING_PASSWORD
+            GRADLE_PUBLISH_KEY
+            GRADLE_PUBLISH_SECRET
+          )
+          for var in "${required_vars[@]}"; do
+            if [ -z "${!var:-}" ]; then
+              echo "Missing required secret: $var" >&2
+              exit 1
+            fi
+          done
+
+      - name: Write release credentials to project Gradle directory
+        run: |
+          cat > .gradle/gradle.properties <<'EOF'
+          org.gradle.daemon=false
+          org.gradle.parallel=true
+          org.gradle.workers.max=2
+          org.gradle.configuration-cache=true
+          org.gradle.configuration-cache.parallel=true
+          kotlin.incremental=false
+          warningsAsErrors=false
+          CENTRAL_PORTAL_USERNAME=${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          CENTRAL_PORTAL_PASSWORD=${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+          SIGNING_KEY=${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD=${{ secrets.SIGNING_PASSWORD }}
+          GRADLE_PUBLISH_KEY=${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET=${{ secrets.GRADLE_PUBLISH_SECRET }}
+          EOF
+
+      - name: Publish Plugin to MavenLocal
+        run: ./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand --no-daemon -PWSPB_VERSION="${WSPB_VERSION}"
+
+      - name: Verify release build
+        run: |
+          ./gradlew \
+            spotlessCheck \
+            lint \
+            :wspb-processor:test \
+            :sample-app:assemble \
+            -PminifyWithR8=false \
+            -PWSPB_VERSION="${WSPB_VERSION}" \
+            --no-daemon
+
+      - name: Publish libraries to Sonatype Central staging API
+        run: |
+          ./gradlew \
+            :wspb-annotation:publishMavenJavaPublicationToSonatypeCentralRepository \
+            :wspb-processor:publishMavenJavaPublicationToSonatypeCentralRepository \
+            -PWSPB_VERSION="${WSPB_VERSION}" \
+            --no-daemon
+
+      - name: Promote staging repository to Maven Central
+        env:
+          CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+        run: |
+          set -euo pipefail
+          auth_token=$(printf '%s:%s' "$CENTRAL_PORTAL_USERNAME" "$CENTRAL_PORTAL_PASSWORD" | base64 | tr -d '\n')
+          curl \
+            --fail-with-body \
+            --request POST \
+            --header "Authorization: Bearer ${auth_token}" \
+            "https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/${CENTRAL_NAMESPACE}?publishing_type=automatic"
+
+      - name: Publish Gradle plugin
+        env:
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+        run: ./gradlew :wspb-gradle-plugin:publishPlugins -PWSPB_VERSION="${WSPB_VERSION}" --no-daemon
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --generate-notes --verify-tag
