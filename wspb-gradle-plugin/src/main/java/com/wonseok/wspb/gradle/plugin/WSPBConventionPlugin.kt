@@ -51,7 +51,7 @@ class WSPBConventionPlugin : Plugin<Project> {
         extensions.configure<AndroidComponentsExtension<*, *, *>>("androidComponents") {
             onVariants { variant ->
                 val protoDir =
-                    layout.buildDirectory.dir("generated/ksp/${variant.name}/resources/proto")
+                    layout.buildDirectory.dir("generated/ksp/${variant.name}/resources")
 
                 extensions.configure<BaseExtension>("android") {
                     sourceSets.getByName(variant.name) {

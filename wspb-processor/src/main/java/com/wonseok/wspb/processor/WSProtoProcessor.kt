@@ -91,8 +91,14 @@ class WSProtoProcessor(
                 return
             }
 
+            val containingFile = classDeclaration.containingFile
+            if (containingFile == null) {
+                logger.error("Unable to resolve containing file for '${classDeclaration.simpleName.asString()}'.")
+                return
+            }
+
             val outputFile = codeGenerator.createNewFile(
-                dependencies = Dependencies(false, *resolver.getAllFiles().toList().toTypedArray()),
+                dependencies = Dependencies(false, containingFile),
                 packageName = processorOptions.protoPackagePath,
                 fileName = fileName,
                 extensionName = "proto",

@@ -5,6 +5,8 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.withType
+import org.gradle.plugins.signing.Sign
 import org.gradle.plugins.signing.SigningExtension
 import java.util.Properties
 
@@ -133,13 +135,21 @@ subprojects {
             val signingPassword = projectGradleProperty("SIGNING_PASSWORD").orNull
             val remotePublishRequested = isRemotePublishRequested()
 
+            if (remotePublishRequested && signingKey.isNullOrBlank()) {
+                error("SIGNING_KEY is required for remote publishing. Configure ./.gradle/gradle.properties.")
+            }
+
             extensions.configure<SigningExtension> {
-                isRequired = remotePublishRequested
+                isRequired = remotePublishRequested && !signingKey.isNullOrBlank()
 
                 if (!signingKey.isNullOrBlank()) {
                     useInMemoryPgpKeys(signingKey, signingPassword)
                     sign(extensions.getByType(PublishingExtension::class.java).publications)
                 }
+            }
+
+            tasks.withType<Sign>().configureEach {
+                enabled = remotePublishRequested && !signingKey.isNullOrBlank()
             }
         }
     }
