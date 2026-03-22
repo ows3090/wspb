@@ -9,6 +9,7 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
+        mavenLocal()
     }
 }
 dependencyResolutionManagement {
@@ -16,9 +17,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        mavenLocal()
     }
 }
 
-rootProject.name = "WSProtobuf"
-include(":app")
- 
+rootProject.name = "wspb"
+include(":sample-app")
+include(":wspb-annotation")
+include(":wspb-processor")
+include(":wspb-gradle-plugin")

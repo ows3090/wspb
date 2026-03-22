@@ -1,12 +1,31 @@
-name: Feature request
-description: File a feature request
-title: "[FR]: "
+name: Feature Request
+description: Suggest an improvement or new capability
+title: "[Feature] "
 labels: ["enhancement", "triage me"]
 body:
   - type: textarea
-    id: describe-feature
+    id: problem
     attributes:
-      label: Describe the feature request
-      description: Is your feature request? Please describe.
+      label: Problem Statement
+      description: What limitation or pain point are you trying to solve?
+      placeholder: e.g. cannot map nullable fields to proto optional safely
     validations:
       required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Describe your preferred solution or API.
+      placeholder: e.g. add annotation parameter for proto package
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any workaround or alternative you considered.
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected Impact
+      description: Who benefits and what changes in usage/development flow?

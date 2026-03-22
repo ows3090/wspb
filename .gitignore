@@ -11,6 +11,7 @@ local.properties
 
 # Log/OS Files
 *.log
+.DS_Store
 
 # Android Studio generated files and folders
 captures/
@@ -45,6 +46,10 @@ gen-external-apklibs
 ### Kotlin ###
 # Compiled class file
 *.class
+
+# Compiler caches
+**/.kotlin/
+**/kotlin-compiler-*
 
 # Log file
 
