@@ -47,7 +47,6 @@ fun Project.projectGradleFile(path: String?): File? {
     if (path.isNullOrBlank()) return null
     return rootProject.file(path).takeIf { it.isFile }
 }
-
 fun Project.isRemotePublishRequested(): Boolean =
     gradle.startParameter.taskNames.any { taskName ->
         val normalized = taskName.lowercase()

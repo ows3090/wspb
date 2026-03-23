@@ -65,7 +65,6 @@ jobs:
           cat > .gradle/signing-key.asc <<'EOF'
           ${{ secrets.SIGNING_KEY }}
           EOF
-
           cat > .gradle/gradle.properties <<'EOF'
           org.gradle.daemon=false
           org.gradle.parallel=true
