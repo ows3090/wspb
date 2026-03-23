@@ -8,6 +8,7 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
 import org.gradle.plugins.signing.Sign
 import org.gradle.plugins.signing.SigningExtension
+import java.io.File
 import java.util.Properties
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
@@ -42,6 +43,10 @@ val projectGradleProperties = Properties().apply {
 fun Project.projectGradleProperty(name: String) =
     providers.provider { projectGradleProperties.getProperty(name) }
 
+fun Project.projectGradleFile(path: String?): File? {
+    if (path.isNullOrBlank()) return null
+    return rootProject.file(path).takeIf { it.isFile }
+}
 fun Project.isRemotePublishRequested(): Boolean =
     gradle.startParameter.taskNames.any { taskName ->
         val normalized = taskName.lowercase()
@@ -131,12 +136,18 @@ subprojects {
 
     pluginManager.withPlugin("signing") {
         if (path in publishableModules) {
-            val signingKey = projectGradleProperty("SIGNING_KEY").orNull
+            val signingKeyFilePath = projectGradleProperty("SIGNING_KEY_FILE").orNull
+            val signingKeyFile = projectGradleFile(signingKeyFilePath)
+            val signingKey = signingKeyFile?.readText()
             val signingPassword = projectGradleProperty("SIGNING_PASSWORD").orNull
             val remotePublishRequested = isRemotePublishRequested()
 
-            if (remotePublishRequested && signingKey.isNullOrBlank()) {
-                error("SIGNING_KEY is required for remote publishing. Configure ./.gradle/gradle.properties.")
+            if (remotePublishRequested && signingKeyFilePath.isNullOrBlank()) {
+                error("SIGNING_KEY_FILE is required for remote publishing. Configure ./.gradle/gradle.properties.")
+            }
+
+            if (remotePublishRequested && signingKeyFile == null) {
+                error("Signing key file '$signingKeyFilePath' could not be read.")
             }
 
             extensions.configure<SigningExtension> {
