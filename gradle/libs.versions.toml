@@ -7,7 +7,7 @@ jetbrainsKotlinJvm = "2.0.21"
 ksp = "2.0.21-1.0.27"
 protobufPlugin = "0.9.5"
 pluginPublish = "2.1.0"
-wspb = "1.0.0"
+wspb = "1.0.1"
 
 ## libraries
 coreKtx = "1.17.0"

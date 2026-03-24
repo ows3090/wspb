@@ -13,12 +13,12 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
-    id("io.github.ows3090.wspb.proto") version "1.0.0"
+    id("io.github.ows3090.wspb.proto") version "1.0.1"
 }
 
 dependencies {
-    implementation("io.github.ows3090:wspb-annotation:1.0.0")
-    ksp("io.github.ows3090:wspb-processor:1.0.0")
+    implementation("io.github.ows3090:wspb-annotation:1.0.1")
+    ksp("io.github.ows3090:wspb-processor:1.0.1")
 }
 ```
 
