@@ -1,1 +1,2 @@
+# KSP discovers processor providers through Java's ServiceLoader.
 com.wonseok.wspb.processor.WSProtoProcessorProvider

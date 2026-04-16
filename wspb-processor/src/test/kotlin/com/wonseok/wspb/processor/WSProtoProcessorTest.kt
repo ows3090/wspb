@@ -12,6 +12,13 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * End-to-end tests for the processor using in-memory compilation.
+ *
+ * This style of test is valuable for code generators because it verifies the
+ * same contract that real consumers rely on: source in, compilation outcome and
+ * generated files out.
+ */
 @OptIn(ExperimentalCompilerApi::class)
 class WSProtoProcessorTest {
     @Test
@@ -161,13 +168,25 @@ class WSProtoProcessorTest {
         vararg sources: SourceFile,
         kspArgs: Map<String, String> = emptyMap(),
     ): CompilationOutcome {
-        // compile-testing 라이브러리의 in-memory 컴파일 환경
+        // The compile-testing library creates a temporary throwaway compilation
+        // so the processor can be exercised without creating a real sample
+        // project on disk.
         val compilation = KotlinCompilation().apply {
-            this.sources = sources.toList() // 테스트 소스들을 컴파일 입력
-            symbolProcessorProviders = listOf(WSProtoProcessorProvider())   // 테스트 컴파일에 우리 KSP processor를 연결
-            inheritClassPath = true     // 테스트용 컴파일이 현재 프로젝트의 의존성/classpath를 같이 사용
-            messageOutputStream = System.out    // 컴파일 로그를 표준 출력
-            this.kspArgs.putAll(kspArgs)    // KSP 옵션을 이 컴파일에 주입
+            // The generated source snippets passed to the helper become the
+            // complete source set for this synthetic compilation.
+            this.sources = sources.toList()
+            // Register the real processor provider so the test follows the same
+            // creation path as a normal KSP build.
+            symbolProcessorProviders = listOf(WSProtoProcessorProvider())
+            // Reuse the current test runtime classpath so the temporary
+            // compilation can see `@WSProto`, Kotlin stdlib, and test
+            // dependencies without building a separate Gradle project.
+            inheritClassPath = true
+            // Print compiler diagnostics to the test output to make failures
+            // easier to diagnose in CI.
+            messageOutputStream = System.out
+            // Allow each test to simulate custom build-script KSP arguments.
+            this.kspArgs.putAll(kspArgs)
         }
 
         return CompilationOutcome(
@@ -176,6 +195,10 @@ class WSProtoProcessorTest {
         )
     }
 
+    /**
+     * Wraps both the compilation handle and result so helper methods can inspect
+     * generated files after the compilation finishes.
+     */
     private data class CompilationOutcome(
         val compilation: KotlinCompilation,
         val result: KotlinCompilation.Result,

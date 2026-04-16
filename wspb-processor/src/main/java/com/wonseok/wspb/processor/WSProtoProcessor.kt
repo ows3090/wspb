@@ -15,24 +15,36 @@ import com.google.devtools.ksp.validate
 import com.wonseok.wspb.annotation.WSProto
 import java.io.OutputStream
 
+/**
+ * KSP processor that converts annotated Kotlin classes into `.proto` files.
+ *
+ * The processor intentionally generates plain Protobuf schema files instead of
+ * Kotlin or Java source. The Gradle plugin later wires those schema files into
+ * the protobuf plugin so `protoc` can generate Java lite classes.
+ */
 class WSProtoProcessor(
     private val codeGenerator: CodeGenerator,
     private val logger: KSPLogger,
     options: Map<String, String>,
 ) : SymbolProcessor {
+    /** Parsed and validated processor options shared by the whole compilation. */
     private val processorOptions = ProcessorOptions.from(options, logger)
+
+    /** Fully qualified annotation name used when asking KSP for annotated symbols. */
     private val annotationFqName = WSProto::class.qualifiedName ?: FALLBACK_ANNOTATION_FQ_NAME
 
     companion object {
         private const val FALLBACK_ANNOTATION_FQ_NAME = "com.wonseok.wspb.annotation.WSProto"
     }
 
+    /** Writes optional trace logs when verbose mode is enabled from the build. */
     private fun verboseLog(message: String) {
         if (processorOptions.verbose) {
             logger.warn(message)
         }
     }
 
+    /** Small convenience operator used when streaming generated file contents. */
     operator fun OutputStream.plusAssign(str: String) {
         this.write(str.toByteArray())
     }
@@ -46,11 +58,19 @@ class WSProtoProcessor(
             .toList()
 
         if (symbols.isEmpty()) return emptyList()
+
+        // KSP may call `process` multiple times. Symbols that still reference
+        // unresolved types must be returned so they can be revisited in a later
+        // round after other processors generate their dependencies.
         val (validSymbols, deferredSymbols) = symbols.partition { it.isProcessable() }
         validSymbols.forEach { it.accept(ProtoVisitor(), Unit) }
         return deferredSymbols
     }
 
+    /**
+     * Returns `true` only when the class and all of its properties can be read
+     * safely in the current KSP round.
+     */
     private fun KSClassDeclaration.isProcessable(): Boolean {
         if (!validate()) return false
         return getAllProperties().all { property ->
@@ -58,22 +78,27 @@ class WSProtoProcessor(
         }
     }
 
+    /**
+     * Visitor responsible for turning a single Kotlin class into a `.proto`
+     * schema file.
+     */
     inner class ProtoVisitor : KSVisitorVoid() {
         override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
             verboseLog("WSProtoProcessor visitClassDeclaration")
 
-            // Only class can be annotated with @WSProto
+            // The annotation contract is intentionally narrow: only concrete
+            // classes are supported as schema sources.
             if (classDeclaration.classKind != ClassKind.CLASS) {
                 logger.error("Only class can be annotated with @WSProto", classDeclaration)
                 return
             }
 
-            // Find @WSProto annotation
+            // This processor uses only one annotation, so we can safely extract
+            // the first matching instance and read its `name` argument.
             val annotation = classDeclaration.annotations.first {
                 it.shortName.asString() == "WSProto"
             }
 
-            // Find file name argument
             val fileName = annotation.arguments.first {
                 it.name?.asString() == "name"
             }.value as? String
@@ -83,6 +108,8 @@ class WSProtoProcessor(
                 return
             }
 
+            // Protobuf message names are conventionally PascalCase even when the
+            // source file name is snake_case.
             val pascalCaseName = fileName.split('_')
                 .joinToString("") { word ->
                     word.replaceFirstChar {
@@ -90,6 +117,9 @@ class WSProtoProcessor(
                     }
                 }
 
+            // The generated message name must differ from the original class name
+            // so users can keep their Kotlin model and generated Protobuf class in
+            // the same package without name collisions.
             if (pascalCaseName == classDeclaration.simpleName.asString()) {
                 logger.error("Class Name must be different from file name")
                 return
@@ -101,6 +131,9 @@ class WSProtoProcessor(
                 return
             }
 
+            // Build everything in memory first. This avoids leaving a partially
+            // written `.proto` file behind if an exception happens while mapping
+            // one of the properties.
             val propertyDefinitions = classDeclaration.getAllProperties()
                 .filter { it.validate() }
                 .mapIndexed { index, property ->
@@ -127,6 +160,12 @@ class WSProtoProcessor(
         }
     }
 
+    /**
+     * Converts one Kotlin property into a Protobuf field definition.
+     *
+     * Example:
+     * `val userName: String` -> `string user_name = 1;`
+     */
     private fun buildFieldDefinition(
         property: KSPropertyDeclaration,
         index: Int,
@@ -137,6 +176,7 @@ class WSProtoProcessor(
         val argType = getProtoTypeName(ksType)
         var argName = ""
         property.simpleName.asString().forEachIndexed { charIndex, ch ->
+            // Convert camelCase Kotlin property names into snake_case field names.
             if (ch.isUpperCase() && charIndex > 0) {
                 argName += "_"
             }
@@ -145,6 +185,12 @@ class WSProtoProcessor(
         return "    $argType $argName = $index;\n"
     }
 
+    /**
+     * Maps supported Kotlin types to their Protobuf equivalents.
+     *
+     * Unsupported types fail fast because generating a wrong schema would be
+     * harder to debug than stopping compilation with a clear message.
+     */
     private fun getProtoTypeName(ksType: KSType): String {
         val kotlinType = ksType.declaration.simpleName.asString()
         return when (kotlinType) {
@@ -156,6 +202,8 @@ class WSProtoProcessor(
             "String" -> "string"
             "ByteArray" -> "bytes"
             "List", "Set", "Array" -> {
+                // Collection element types are resolved recursively so nested
+                // primitive collections still produce valid repeated fields.
                 ksType.arguments.first().type?.resolve()?.let { type ->
                     "repeated ${getProtoTypeName(type)}"
                 } ?: run {
@@ -177,6 +225,8 @@ class WSProtoProcessor(
     }
 
     override fun onError() {
+        // This callback is useful when debugging processor-level failures that
+        // happened before a more specific error message reached the user.
         logger.error("WSProtoProcessor onError")
         super.onError()
     }
