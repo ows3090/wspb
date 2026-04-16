@@ -20,6 +20,7 @@ compose-bom = "2025.06.00"
 activity-compose = "1.10.1"
 androidTools = "31.13.1"
 protobuf = "4.29.2"
+kotlinCompileTesting = "1.6.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,8 @@ compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
 protobuf-kotlin-lite = { group = "com.google.protobuf", name = "protobuf-kotlin-lite", version.ref = "protobuf" }
 protobuf-protoc = { group = "com.google.protobuf", name = "protoc", version.ref = "protobuf" }
+kotlin-compile-testing = { group = "com.github.tschuchortdev", name = "kotlin-compile-testing", version.ref = "kotlinCompileTesting" }
+kotlin-compile-testing-ksp = { group = "com.github.tschuchortdev", name = "kotlin-compile-testing-ksp", version.ref = "kotlinCompileTesting" }
 
 ## custom gradle plugin
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }

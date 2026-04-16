@@ -30,7 +30,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun MainScreen() {
+    val userPreference = UserPreference.newBuilder()
+        .setId(1)
+        .setName("wonseok")
+        .build()
+    val testPreference = TestPreference.newBuilder()
+        .setTest("proto-ready")
+        .build()
+
     Text(
-        text = "Hello world"
+        text = "${userPreference.name} / ${testPreference.test}"
     )
 }

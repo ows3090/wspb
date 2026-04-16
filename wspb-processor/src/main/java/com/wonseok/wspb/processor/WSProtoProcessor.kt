@@ -46,15 +46,19 @@ class WSProtoProcessor(
             .toList()
 
         if (symbols.isEmpty()) return emptyList()
-        symbols.forEach { it.accept(ProtoVisitor(resolver), Unit) }
-        return symbols.filterNot { it.validate() }.toList()
+        val (validSymbols, deferredSymbols) = symbols.partition { it.isProcessable() }
+        validSymbols.forEach { it.accept(ProtoVisitor(), Unit) }
+        return deferredSymbols
     }
 
-    inner class ProtoVisitor(
-        private val resolver: Resolver,
-    ) : KSVisitorVoid() {
-        var file: OutputStream? = null
+    private fun KSClassDeclaration.isProcessable(): Boolean {
+        if (!validate()) return false
+        return getAllProperties().all { property ->
+            property.validate() && !property.type.resolve().isError
+        }
+    }
 
+    inner class ProtoVisitor : KSVisitorVoid() {
         override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
             verboseLog("WSProtoProcessor visitClassDeclaration")
 
@@ -97,54 +101,48 @@ class WSProtoProcessor(
                 return
             }
 
-            val outputFile = codeGenerator.createNewFile(
+            val propertyDefinitions = classDeclaration.getAllProperties()
+                .filter { it.validate() }
+                .mapIndexed { index, property ->
+                    buildFieldDefinition(property, index + 1)
+                }
+
+            val protoContent = buildString {
+                append("syntax = \"proto3\";\n\n")
+                append("option java_package = \"${processorOptions.protoJavaPackage}\";\n")
+                append("option java_multiple_files = true;\n\n")
+                append("message $pascalCaseName {\n")
+                propertyDefinitions.forEach(::append)
+                append("}")
+            }
+
+            codeGenerator.createNewFile(
                 dependencies = Dependencies(false, containingFile),
                 packageName = processorOptions.protoPackagePath,
                 fileName = fileName,
                 extensionName = "proto",
-            )
-            file = outputFile
-
-            try {
-                outputFile += "syntax = \"proto3\";\n\n"
-                outputFile += "option java_package = \"${processorOptions.protoJavaPackage}\";\n"
-                outputFile += "option java_multiple_files = true;\n\n"
-                outputFile += "message $pascalCaseName {\n"
-
-                val properties = classDeclaration.getAllProperties().filter { it.validate() }
-                if (properties.iterator().hasNext()) {
-                    properties.forEachIndexed { index, property ->
-                        visitPropertyDeclaration(property, Unit)
-                        outputFile += "${index + 1};\n"
-                    }
-                }
-
-                outputFile += "}"
-            } finally {
-                outputFile.close()
-                file = null
+            ).use { outputFile ->
+                outputFile += protoContent
             }
         }
+    }
 
-        override fun visitPropertyDeclaration(property: KSPropertyDeclaration, data: Unit) {
-            verboseLog("WSProtoProcessor visitPropertyDeclaration")
-            val currentFile = file
-            if (currentFile == null) {
-                logger.error("Internal error: output stream is unavailable for property '${property.simpleName.asString()}'")
-                return
-            }
+    private fun buildFieldDefinition(
+        property: KSPropertyDeclaration,
+        index: Int,
+    ): String {
+        verboseLog("WSProtoProcessor visitPropertyDeclaration")
 
-            val ksType = property.type.resolve()
-            val argType = getProtoTypeName(ksType)
-            var argName = ""
-            property.simpleName.asString().forEachIndexed { index, ch ->
-                if (ch.isUpperCase() && index > 0) {
-                    argName += "_"
-                }
-                argName += ch.lowercase()
+        val ksType = property.type.resolve()
+        val argType = getProtoTypeName(ksType)
+        var argName = ""
+        property.simpleName.asString().forEachIndexed { charIndex, ch ->
+            if (ch.isUpperCase() && charIndex > 0) {
+                argName += "_"
             }
-            currentFile += "    $argType $argName = "
+            argName += ch.lowercase()
         }
+        return "    $argType $argName = $index;\n"
     }
 
     private fun getProtoTypeName(ksType: KSType): String {
