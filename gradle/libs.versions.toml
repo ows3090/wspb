@@ -40,6 +40,8 @@ protobuf-kotlin-lite = { group = "com.google.protobuf", name = "protobuf-kotlin-
 protobuf-protoc = { group = "com.google.protobuf", name = "protoc", version.ref = "protobuf" }
 kotlin-compile-testing = { group = "com.github.tschuchortdev", name = "kotlin-compile-testing", version.ref = "kotlinCompileTesting" }
 kotlin-compile-testing-ksp = { group = "com.github.tschuchortdev", name = "kotlin-compile-testing-ksp", version.ref = "kotlinCompileTesting" }
+wspb-annotation = { group = "io.github.ows3090", name = "wspb-annotation", version.ref = "wspb" }
+wspb-processor = { group = "io.github.ows3090", name = "wspb-processor", version.ref = "wspb" }
 
 ## custom gradle plugin
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }

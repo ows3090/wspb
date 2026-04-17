@@ -4,7 +4,7 @@
 
 This guide is for Android projects consuming a published `wspb` release.
 
-If you are working inside this repository itself, use the local development flow from [README.md](../README.md) instead.
+If you are working inside this repository itself, use `published-sample-app` for published-artifact verification and `local-sample-app` for local-module verification. Run `./gradlew publishToMavenLocal --configure-on-demand` before building `published-sample-app` locally.
 
 ## Installation
 

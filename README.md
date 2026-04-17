@@ -9,7 +9,8 @@ Kotlin model -> `@WSProto` -> KSP `.proto` generation -> Android proto source wi
 - `wspb-annotation`: defines `@WSProto`
 - `wspb-processor`: KSP processor that generates `.proto` files
 - `wspb-gradle-plugin`: Android Gradle plugin that wires generated proto directories into the build
-- `sample-app`: example consumer app for integration verification
+- `local-sample-app`: local-development consumer app using project modules
+- `published-sample-app`: consumer app using published Maven coordinates
 
 ## Planned Public Coordinates
 
@@ -98,12 +99,15 @@ These are the versions currently validated in this repository. A broader compati
 Inside this repository, the safest verification flow is:
 
 ```bash
-./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand
-./gradlew :sample-app:assembleDebug
+./gradlew publishToMavenLocal --configure-on-demand
+./gradlew :local-sample-app:assembleDebug
+./gradlew :published-sample-app:assembleDebug
 ./gradlew :wspb-processor:test
 ./gradlew spotlessCheck
 ./gradlew lint
 ```
+
+`local-sample-app` and `published-sample-app` can both be opened and built from Android Studio as separate app modules. The former validates project-module consumption, and the latter validates the published dependency flow through `mavenLocal()` or remote repositories.
 
 ## Docs
 

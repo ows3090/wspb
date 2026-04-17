@@ -5,17 +5,20 @@
 
 ## 저장소 성격
 - 본체: `wspb-annotation`, `wspb-processor`, `wspb-gradle-plugin`
-- 예시: `sample-app` (라이브러리 소비자 사용 예시 앱)
+- 예시:
+- `local-sample-app` (프로젝트 모듈 직접 참조 앱)
+- `published-sample-app` (Maven/Gradle 배포 좌표 소비 앱)
 
 ## 작업 원칙
-- 라이브러리 동작 변경은 본체 모듈 위주로 수정하고, `sample-app`은 검증 용도로 유지합니다.
+- 라이브러리 동작 변경은 본체 모듈 위주로 수정하고, 샘플 앱 2개는 검증 용도로 유지합니다.
 - 문서와 코드가 어긋나지 않게 함께 업데이트합니다.
 - 동작 확인은 가능한 최소 명령으로 빠르게 검증합니다.
 
 ## 표준 검증 명령어
 ```bash
-./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand
-./gradlew :sample-app:assembleDebug
+./gradlew publishToMavenLocal --configure-on-demand
+./gradlew :local-sample-app:assembleDebug
+./gradlew :published-sample-app:assembleDebug
 ./gradlew spotlessCheck
 ./gradlew lint
 ```
@@ -23,7 +26,7 @@
 ## 자주 발생하는 이슈
 - `Internal schema project ... was not found`:
   - 플러그인 해석 불일치 가능성이 큽니다.
-  - 먼저 `:wspb-gradle-plugin:publishToMavenLocal --configure-on-demand` 실행 후 재시도합니다.
+  - 먼저 `publishToMavenLocal --configure-on-demand` 실행 후 재시도합니다.
 
 ## 문서 위치
 - 개요/빠른 시작: `README.md`

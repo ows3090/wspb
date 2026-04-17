@@ -3,7 +3,7 @@
 ## 기본 원칙
 - 변경은 가능한 한 작고 명확하게 유지합니다.
 - 코드 변경 시 관련 문서도 함께 업데이트합니다.
-- `sample-app`은 라이브러리 사용 예시이므로, 본체 로직과 책임을 분리해 작업합니다.
+- `local-sample-app`은 라이브러리 사용 예시이므로, 본체 로직과 책임을 분리해 작업합니다.
 
 ## 개발 플로우
 1. 브랜치 생성
@@ -13,8 +13,9 @@
 
 ## 로컬 검증 체크리스트
 ```bash
-./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand
-./gradlew :sample-app:assembleDebug
+./gradlew publishToMavenLocal --configure-on-demand
+./gradlew :local-sample-app:assembleDebug
+./gradlew :published-sample-app:assembleDebug
 ./gradlew spotlessCheck
 ./gradlew lint
 ```
