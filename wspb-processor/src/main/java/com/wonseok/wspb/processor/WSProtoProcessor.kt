@@ -33,8 +33,14 @@ class WSProtoProcessor(
     /** Fully qualified annotation name used when asking KSP for annotated symbols. */
     private val annotationFqName = WSProto::class.qualifiedName ?: FALLBACK_ANNOTATION_FQ_NAME
 
+    /** Tracks generated file names across KSP rounds to detect duplicates. */
+    private val generatedNames = mutableSetOf<String>()
+
     companion object {
         private const val FALLBACK_ANNOTATION_FQ_NAME = "com.wonseok.wspb.annotation.WSProto"
+        private val VALID_PROTO_NAME_PATTERN = Regex("^[a-z][a-z0-9_]*$")
+        private val COLLECTION_TYPE_NAMES = setOf("List", "Set", "Array")
+        private val VALID_MAP_KEY_TYPES = setOf("Int", "Short", "Byte", "Long", "Boolean", "String")
     }
 
     /** Writes optional trace logs when verbose mode is enabled from the build. */
@@ -108,6 +114,22 @@ class WSProtoProcessor(
                 return
             }
 
+            if (!fileName.matches(VALID_PROTO_NAME_PATTERN)) {
+                logger.error(
+                    "@WSProto name must match pattern [a-z][a-z0-9_]* but was '$fileName'",
+                    annotation,
+                )
+                return
+            }
+
+            if (!generatedNames.add(fileName)) {
+                logger.error(
+                    "Duplicate @WSProto name '$fileName' — each name must be unique",
+                    annotation,
+                )
+                return
+            }
+
             // Protobuf message names are conventionally PascalCase even when the
             // source file name is snake_case.
             val pascalCaseName = fileName.split('_')
@@ -174,15 +196,30 @@ class WSProtoProcessor(
 
         val ksType = property.type.resolve()
         val argType = getProtoTypeName(ksType)
-        var argName = ""
-        property.simpleName.asString().forEachIndexed { charIndex, ch ->
-            // Convert camelCase Kotlin property names into snake_case field names.
-            if (ch.isUpperCase() && charIndex > 0) {
-                argName += "_"
-            }
-            argName += ch.lowercase()
-        }
+        val argName = toSnakeCase(property.simpleName.asString())
         return "    $argType $argName = $index;\n"
+    }
+
+    /**
+     * Converts a camelCase name to snake_case, handling consecutive uppercase
+     * letters (acronyms) correctly.
+     *
+     * Examples:
+     * - `userName` -> `user_name`
+     * - `userURL` -> `user_url`
+     * - `isHTTPSEnabled` -> `is_https_enabled`
+     */
+    private fun toSnakeCase(name: String): String = buildString {
+        name.forEachIndexed { i, ch ->
+            if (ch.isUpperCase()) {
+                val prevIsLower = i > 0 && name[i - 1].isLowerCase()
+                val nextIsLower = i + 1 < name.length && name[i + 1].isLowerCase()
+                if (prevIsLower || (i > 0 && nextIsLower)) {
+                    append('_')
+                }
+            }
+            append(ch.lowercase())
+        }
     }
 
     /**
@@ -201,15 +238,34 @@ class WSProtoProcessor(
             "Boolean" -> "bool"
             "String" -> "string"
             "ByteArray" -> "bytes"
-            "List", "Set", "Array" -> {
-                // Collection element types are resolved recursively so nested
-                // primitive collections still produce valid repeated fields.
-                ksType.arguments.first().type?.resolve()?.let { type ->
-                    "repeated ${getProtoTypeName(type)}"
-                } ?: run {
-                    logger.error("Unsupported type: $kotlinType")
-                    throw IllegalArgumentException("Unsupported type: $kotlinType")
+            "List", "Array" -> {
+                resolveRepeatedType(ksType, kotlinType)
+            }
+
+            "Set" -> {
+                logger.warn("Set<T> is mapped to 'repeated' which allows duplicates in proto3")
+                resolveRepeatedType(ksType, kotlinType)
+            }
+
+            "Map" -> {
+                val args = ksType.arguments
+                val keyType = args[0].type?.resolve()
+                val valueType = args[1].type?.resolve()
+                if (keyType == null || valueType == null) {
+                    logger.error("Unable to resolve Map type arguments")
+                    throw IllegalArgumentException("Unable to resolve Map type arguments")
                 }
+                val keyTypeName = keyType.declaration.simpleName.asString()
+                if (keyTypeName !in VALID_MAP_KEY_TYPES) {
+                    logger.error("Proto3 map key must be an integral or string type, but was '$keyTypeName'")
+                    throw IllegalArgumentException("Proto3 map key must be an integral or string type, but was '$keyTypeName'")
+                }
+                val valueTypeName = valueType.declaration.simpleName.asString()
+                if (valueTypeName in COLLECTION_TYPE_NAMES || valueTypeName == "Map") {
+                    logger.error("Proto3 map value cannot be a collection or map type")
+                    throw IllegalArgumentException("Proto3 map value cannot be a collection or map type")
+                }
+                "map<${getProtoTypeName(keyType)}, ${getProtoTypeName(valueType)}>"
             }
 
             else -> {
@@ -217,6 +273,22 @@ class WSProtoProcessor(
                 throw IllegalArgumentException("Unsupported type: $kotlinType")
             }
         }
+    }
+
+    /**
+     * Resolves the element type for a collection and produces the `repeated`
+     * proto field prefix. Rejects nested collections.
+     */
+    private fun resolveRepeatedType(ksType: KSType, kotlinType: String): String = ksType.arguments.first().type?.resolve()?.let { type ->
+        val elementType = type.declaration.simpleName.asString()
+        if (elementType in COLLECTION_TYPE_NAMES) {
+            logger.error("Nested collections are not supported in proto3 (found $kotlinType<$elementType<...>>)")
+            throw IllegalArgumentException("Nested collections are not supported in proto3")
+        }
+        "repeated ${getProtoTypeName(type)}"
+    } ?: run {
+        logger.error("Unsupported type: $kotlinType")
+        throw IllegalArgumentException("Unsupported type: $kotlinType")
     }
 
     override fun finish() {

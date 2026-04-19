@@ -59,6 +59,36 @@ class WSProtoProcessorTest {
     }
 
     @Test
+    fun `converts consecutive uppercase property names to correct snake_case`() {
+        val outcome = compile(
+            SourceFile.kotlin(
+                "AcronymData.kt",
+                """
+                package test
+
+                import com.wonseok.wspb.annotation.WSProto
+
+                @WSProto(name = "acronym_test")
+                data class AcronymData(
+                    val userURL: String,
+                    val isHTTPSEnabled: Boolean,
+                    val ioError: String,
+                    val simpleId: Int,
+                )
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.OK, outcome.result.exitCode)
+
+        val generatedProto = outcome.requireGeneratedProto("acronym_test.proto")
+        assertTrue(generatedProto.contains("string user_url = 1;"))
+        assertTrue(generatedProto.contains("bool is_https_enabled = 2;"))
+        assertTrue(generatedProto.contains("string io_error = 3;"))
+        assertTrue(generatedProto.contains("int32 simple_id = 4;"))
+    }
+
+    @Test
     fun `applies custom processor options to generated proto`() {
         val outcome = compile(
             SourceFile.kotlin(
@@ -120,6 +150,101 @@ class WSProtoProcessorTest {
     }
 
     @Test
+    fun `warns when Set type is used`() {
+        val outcome = compile(
+            SourceFile.kotlin(
+                "SetData.kt",
+                """
+                package test
+
+                import com.wonseok.wspb.annotation.WSProto
+
+                @WSProto(name = "set_test")
+                data class SetData(
+                    val tags: Set<String>,
+                )
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.OK, outcome.result.exitCode)
+        assertTrue(outcome.result.messages.contains("Set<T> is mapped to 'repeated' which allows duplicates in proto3"))
+
+        val generatedProto = outcome.requireGeneratedProto("set_test.proto")
+        assertTrue(generatedProto.contains("repeated string tags = 1;"))
+    }
+
+    @Test
+    fun `generates proto for Map fields`() {
+        val outcome = compile(
+            SourceFile.kotlin(
+                "MapData.kt",
+                """
+                package test
+
+                import com.wonseok.wspb.annotation.WSProto
+
+                @WSProto(name = "map_test")
+                data class MapData(
+                    val tags: Map<String, Int>,
+                    val metadata: Map<Int, String>,
+                )
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.OK, outcome.result.exitCode)
+
+        val generatedProto = outcome.requireGeneratedProto("map_test.proto")
+        assertTrue(generatedProto.contains("map<string, int32> tags = 1;"))
+        assertTrue(generatedProto.contains("map<int32, string> metadata = 2;"))
+    }
+
+    @Test
+    fun `fails for Map with invalid key type`() {
+        val outcome = compile(
+            SourceFile.kotlin(
+                "InvalidMapData.kt",
+                """
+                package test
+
+                import com.wonseok.wspb.annotation.WSProto
+
+                @WSProto(name = "invalid_map_test")
+                data class InvalidMapData(
+                    val data: Map<Double, String>,
+                )
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, outcome.result.exitCode)
+        assertTrue(outcome.result.messages.contains("Proto3 map key must be an integral or string type"))
+    }
+
+    @Test
+    fun `fails for nested collections`() {
+        val outcome = compile(
+            SourceFile.kotlin(
+                "NestedData.kt",
+                """
+                package test
+
+                import com.wonseok.wspb.annotation.WSProto
+
+                @WSProto(name = "nested_test")
+                data class NestedData(
+                    val matrix: List<List<String>>,
+                )
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, outcome.result.exitCode)
+        assertTrue(outcome.result.messages.contains("Nested collections are not supported in proto3"))
+    }
+
+    @Test
     fun `fails when message name matches class name`() {
         val outcome = compile(
             SourceFile.kotlin(
@@ -140,6 +265,65 @@ class WSProtoProcessorTest {
         assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, outcome.result.exitCode)
         assertTrue(outcome.result.messages.contains("Class Name must be different from file name"))
         assertFalse(outcome.hasGeneratedProto("user_data.proto"))
+    }
+
+    @Test
+    fun `fails for duplicate WSProto names`() {
+        val outcome = compile(
+            SourceFile.kotlin(
+                "DuplicateData.kt",
+                """
+                package test
+
+                import com.wonseok.wspb.annotation.WSProto
+
+                @WSProto(name = "user_preference")
+                data class UserDataA(
+                    val id: Int,
+                )
+
+                @WSProto(name = "user_preference")
+                data class UserDataB(
+                    val name: String,
+                )
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, outcome.result.exitCode)
+        assertTrue(outcome.result.messages.contains("Duplicate @WSProto name 'user_preference'"))
+    }
+
+    @Test
+    fun `fails for invalid WSProto name format`() {
+        val invalidNames = listOf("" to "empty", "user preference" to "space", "user-data" to "hyphen", "123_bad" to "digit_start")
+        for ((name, label) in invalidNames) {
+            val outcome = compile(
+                SourceFile.kotlin(
+                    "InvalidName_$label.kt",
+                    """
+                    package test
+
+                    import com.wonseok.wspb.annotation.WSProto
+
+                    @WSProto(name = "$name")
+                    data class InvalidName${label.replaceFirstChar { it.uppercase() }}(
+                        val id: Int,
+                    )
+                    """.trimIndent(),
+                ),
+            )
+
+            assertEquals(
+                "Expected COMPILATION_ERROR for name='$name'",
+                KotlinCompilation.ExitCode.COMPILATION_ERROR,
+                outcome.result.exitCode,
+            )
+            assertTrue(
+                "Expected validation error for name='$name'",
+                outcome.result.messages.contains("@WSProto name must match pattern"),
+            )
+        }
     }
 
     @Test
