@@ -29,7 +29,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
-    id("io.github.ows3090.wspb.proto") version "1.0.2"
+    id("io.github.ows3090.wspb.proto") version "1.0.3"
 }
 ```
 
@@ -37,8 +37,8 @@ Add the annotation and processor:
 
 ```kotlin
 dependencies {
-    implementation("io.github.ows3090:wspb-annotation:1.0.2")
-    ksp("io.github.ows3090:wspb-processor:1.0.2")
+    implementation("io.github.ows3090:wspb-annotation:1.0.3")
+    ksp("io.github.ows3090:wspb-processor:1.0.3")
 }
 ```
 
