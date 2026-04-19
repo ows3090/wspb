@@ -16,6 +16,12 @@ Kotlin model -> @WSProto -> KSP-generated .proto -> protobuf Java lite source
 
 ## Quick Start
 
+Published artifacts:
+
+- Gradle plugin: <https://plugins.gradle.org/plugin/io.github.ows3090.wspb.proto>
+- Annotation artifact: <https://central.sonatype.com/artifact/io.github.ows3090/wspb-annotation>
+- Processor artifact: <https://central.sonatype.com/artifact/io.github.ows3090/wspb-processor>
+
 Apply the Android, Kotlin, KSP, and wspb plugins:
 
 ```kotlin
@@ -23,7 +29,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
-    id("io.github.ows3090.wspb.proto") version "1.0.1"
+    id("io.github.ows3090.wspb.proto") version "1.0.2"
 }
 ```
 
@@ -31,8 +37,8 @@ Add the annotation and processor:
 
 ```kotlin
 dependencies {
-    implementation("io.github.ows3090:wspb-annotation:1.0.1")
-    ksp("io.github.ows3090:wspb-processor:1.0.1")
+    implementation("io.github.ows3090:wspb-annotation:1.0.2")
+    ksp("io.github.ows3090:wspb-processor:1.0.2")
 }
 ```
 
