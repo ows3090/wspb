@@ -10,14 +10,18 @@ import com.wonseok.wspb.annotation.WSProto
 @WSProto(name = "user_preference")
 data class UserData(
     val id: Int,
-    val name: String
+    val name: String,
 )
 
 @WSProto(name = "test_preference")
 data class TestData(
-    val test: String
+    val test: String,
 )
 
+/**
+ * Minimal Android entry point used only as an integration harness for the
+ * local-consumer flow in this repository.
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +35,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainScreen() {
     Text(
-        text = "Hello world"
+        // Keep the UI intentionally small. The point of the sample is to show
+        // successful annotation processing wiring, not app features.
+        text = "wspb local sample"
     )
 }

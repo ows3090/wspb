@@ -7,13 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.wonseok.wspb"
-    compileSdk {
-        version = release(36)
-    }
+    namespace = "com.wonseok.wspb.publishedconsumer"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.wonseok.wspb"
+        applicationId = "com.wonseok.wspb.publishedconsumer"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -45,8 +43,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":wspb-annotation"))
-    ksp(project(":wspb-processor"))
+    implementation(libs.wspb.annotation)
+    ksp(libs.wspb.processor)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

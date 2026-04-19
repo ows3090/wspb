@@ -22,7 +22,8 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "wspb"
-include(":sample-app")
+include(":local-sample-app")
+include(":published-sample-app")
 include(":wspb-annotation")
 include(":wspb-processor")
 include(":wspb-gradle-plugin")
