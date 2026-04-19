@@ -1,20 +1,32 @@
 # Repository Guidelines
 
-## 목적
-이 문서는 저장소에서 작업하는 사람/에이전트가 빠르게 일관된 방식으로 기여할 수 있도록 운영 규칙을 정리합니다.
+## Purpose
 
-## 저장소 성격
-- 본체: `wspb-annotation`, `wspb-processor`, `wspb-gradle-plugin`
-- 예시:
-- `local-sample-app` (프로젝트 모듈 직접 참조 앱)
-- `published-sample-app` (Maven/Gradle 배포 좌표 소비 앱)
+This file defines the working rules for people and agents contributing to this repository.
 
-## 작업 원칙
-- 라이브러리 동작 변경은 본체 모듈 위주로 수정하고, 샘플 앱 2개는 검증 용도로 유지합니다.
-- 문서와 코드가 어긋나지 않게 함께 업데이트합니다.
-- 동작 확인은 가능한 최소 명령으로 빠르게 검증합니다.
+## Repository Shape
 
-## 표준 검증 명령어
+Core modules:
+
+- `wspb-annotation`
+- `wspb-processor`
+- `wspb-gradle-plugin`
+
+Verification apps:
+
+- `local-sample-app`: consumes the core modules through direct project dependencies.
+- `published-sample-app`: consumes Maven/Gradle published coordinates, usually from `mavenLocal()` during local development.
+
+## Working Principles
+
+- Make behavior changes in the core modules.
+- Use the sample apps to verify integration, not to hold library logic.
+- Keep code and documentation aligned.
+- Use the smallest command that validates the change you made.
+- Write all Markdown documentation in English.
+
+## Standard Verification Commands
+
 ```bash
 ./gradlew publishToMavenLocal --configure-on-demand
 ./gradlew :local-sample-app:assembleDebug
@@ -23,12 +35,10 @@
 ./gradlew lint
 ```
 
-## 자주 발생하는 이슈
-- `Internal schema project ... was not found`:
-  - 플러그인 해석 불일치 가능성이 큽니다.
-  - 먼저 `publishToMavenLocal --configure-on-demand` 실행 후 재시도합니다.
+For processor-only changes, `./gradlew :wspb-processor:test` is usually the fastest focused check.
 
-## 문서 위치
-- 개요/빠른 시작: `README.md`
-- 사용법: `docs/USAGE.md`
-- 기여: `CONTRIBUTING.md`
+## Documentation Map
+
+- Overview and quick start: `README.md`
+- Detailed usage: `docs/USAGE.md`
+- Contribution workflow: `CONTRIBUTING.md`

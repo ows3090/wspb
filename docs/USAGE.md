@@ -1,12 +1,10 @@
 # Usage Guide
 
-## Audience
+This guide is for Android apps and Android libraries that consume a published `wspb` release.
 
-This guide is for Android projects consuming a published `wspb` release.
+## 1. Install
 
-If you are working inside this repository itself, use `published-sample-app` for published-artifact verification and `local-sample-app` for local-module verification. Run `./gradlew publishToMavenLocal --configure-on-demand` before building `published-sample-app` locally.
-
-## Installation
+Add the plugin:
 
 ```kotlin
 plugins {
@@ -15,16 +13,29 @@ plugins {
     id("com.google.devtools.ksp")
     id("io.github.ows3090.wspb.proto") version "1.0.1"
 }
+```
 
+For an Android library module, use `com.android.library` instead of `com.android.application`.
+
+Add the dependencies:
+
+```kotlin
 dependencies {
     implementation("io.github.ows3090:wspb-annotation:1.0.1")
     ksp("io.github.ows3090:wspb-processor:1.0.1")
 }
 ```
 
-The snippets above describe the intended public-consumer setup. Until the first public release is published, those coordinates are not yet available from a remote repository.
+The wspb Gradle plugin automatically:
 
-## Declare a Model
+- Applies `com.google.protobuf`.
+- Configures `protoc` for Java lite generation.
+- Adds generated KSP resource directories as protobuf source directories.
+- Adds `com.google.protobuf:protobuf-kotlin-lite`.
+
+## 2. Declare Models
+
+Annotate concrete Kotlin classes:
 
 ```kotlin
 import com.wonseok.wspb.annotation.WSProto
@@ -33,68 +44,119 @@ import com.wonseok.wspb.annotation.WSProto
 data class UserData(
     val id: Int,
     val name: String,
+    val isAdmin: Boolean,
 )
 ```
 
-## Optional KSP Configuration
+Build the module. The generated message name is derived from the annotation name:
+
+```kotlin
+val userPreference = UserPreference.newBuilder()
+    .setId(1)
+    .setName("wonseok")
+    .setIsAdmin(true)
+    .build()
+```
+
+## 3. Configure Output Packages
+
+The default generated proto package path is `proto/com/wonseok/wspb`, and the default generated Java package is `com.wonseok.wspb`.
+
+Customize them with KSP arguments:
 
 ```kotlin
 ksp {
     arg("wspb.proto.packagePath", "proto/com/example/schema")
     arg("wspb.proto.javaPackage", "com.example.schema")
+}
+```
+
+With this configuration:
+
+- `.proto` files are written under `build/generated/ksp/<variant>/resources/proto/com/example/schema`.
+- Generated Java lite classes use `com.example.schema`.
+
+Enable troubleshooting logs only when needed:
+
+```kotlin
+ksp {
     arg("wspb.processor.verbose", "true")
 }
 ```
 
-Option reference:
+## 4. Supported Types
 
-- `wspb.proto.packagePath`: generated `.proto` output subdirectory
-- `wspb.proto.javaPackage`: `option java_package` value written into generated `.proto` files
-- `wspb.processor.verbose`: enables processor warning logs
+| Kotlin type | Proto type |
+| --- | --- |
+| `Int`, `Short`, `Byte` | `int32` |
+| `Long` | `int64` |
+| `Float` | `float` |
+| `Double` | `double` |
+| `Boolean` | `bool` |
+| `String` | `string` |
+| `ByteArray` | `bytes` |
+| `List<T>`, `Set<T>`, `Array<T>` | `repeated <mapped T>` |
+| `Map<K, V>` | `map<key, value>` |
 
-Defaults:
+`Map` key types are limited to `Int`, `Short`, `Byte`, `Long`, `Boolean`, and `String`. `Map` values may use any supported non-collection value type, including `ByteArray`.
 
-- `wspb.proto.packagePath = proto/com/wonseok/wspb`
-- `wspb.proto.javaPackage = com.wonseok.wspb`
-- `wspb.processor.verbose = false`
+Example:
 
-## Generated Output
+```kotlin
+@WSProto(name = "profile_cache")
+data class ProfileCacheData(
+    val userId: Long,
+    val tags: List<String>,
+    val attributes: Map<String, String>,
+)
+```
 
-Default output locations:
+Generated schema shape:
 
-- KSP `.proto` files: `build/generated/ksp/<variant>/resources/proto/com/wonseok/wspb`
-- Protobuf Java lite sources: `build/generated/sources/proto/<variant>/java`
+```proto
+syntax = "proto3";
 
-If you override `wspb.proto.packagePath`, the generated `.proto` subdirectory changes accordingly.
+option java_package = "com.wonseok.wspb";
+option java_multiple_files = true;
 
-## Type Mapping
+message ProfileCache {
+    int64 user_id = 1;
+    repeated string tags = 2;
+    map<string, string> attributes = 3;
+}
+```
 
-- `Int`, `Short`, `Byte` -> `int32`
-- `Long` -> `int64`
-- `Float` -> `float`
-- `Double` -> `double`
-- `Boolean` -> `bool`
-- `String` -> `string`
-- `ByteArray` -> `bytes`
-- `List<T>`, `Set<T>`, `Array<T>` -> `repeated <mapped(T)>`
+## 5. Naming Rules
 
-## Naming Rules
+Use stable snake_case names:
 
-- File name: uses `@WSProto(name = "...")`
-- Message name: converts `snake_case` into `PascalCase`
-- Field name: converts Kotlin property names into `snake_case`
+```kotlin
+@WSProto(name = "profile_cache")
+```
 
-## Current Limitations
+Rules:
 
-- Unsupported field types fail the processor
-- Message names that match the annotated class name are rejected
-- Enum, custom message, and richer nullable support are not implemented yet
+- The name must match `[a-z][a-z0-9_]*`.
+- The generated file is `<name>.proto`.
+- The generated message is PascalCase. `profile_cache` becomes `ProfileCache`.
+- Kotlin properties are converted to snake_case field names.
+- Do not use an annotation name that produces the same name as the Kotlin class. `@WSProto(name = "user_data") data class UserData` is rejected.
+- Do not reuse the same `@WSProto` name in one compilation.
 
-## Compatibility Baseline
+## 6. Common Failures
 
-Repository-validated baseline:
+`Unsupported type: Address`
 
-- JDK 21
-- Kotlin 2.0.21
-- KSP 2.0.21-1.0.27
-- AGP 8.13.1
+Use only the supported types listed above. Custom message types are not implemented yet.
+
+`Nested collections are not supported in proto3`
+
+Replace nested collections such as `List<List<String>>` with a flat supported type or model the relationship outside wspb for now.
+
+`Proto3 map key must be an integral or string type`
+
+Use `Int`, `Short`, `Byte`, `Long`, `Boolean`, or `String` for the `Map` key.
+
+`Class Name must be different from file name`
+
+Rename either the Kotlin class or the `@WSProto` name so the generated message class does not collide with the model class.
