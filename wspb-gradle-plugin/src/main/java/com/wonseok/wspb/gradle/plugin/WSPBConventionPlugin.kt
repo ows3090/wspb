@@ -4,7 +4,6 @@ import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.gradle.BaseExtension
 import com.google.protobuf.gradle.ProtobufExtension
 import com.google.protobuf.gradle.proto
-import com.wonseok.convention.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -21,6 +20,18 @@ import org.gradle.kotlin.dsl.dependencies
  * 4. the protobuf lite runtime is added to the project's dependencies.
  */
 class WSPBConventionPlugin : Plugin<Project> {
+    companion object {
+        private const val PROTOBUF_VERSION = "4.29.2"
+
+        private const val PROTOBUF_PLUGIN_ID = "com.google.protobuf"
+        private const val ANDROID_APPLICATION_PLUGIN_ID = "com.android.application"
+        private const val ANDROID_LIBRARY_PLUGIN_ID = "com.android.library"
+
+        private const val PROTOC_ARTIFACT = "com.google.protobuf:protoc:$PROTOBUF_VERSION"
+        private const val PROTOBUF_KOTLIN_LITE_ARTIFACT =
+            "com.google.protobuf:protobuf-kotlin-lite:$PROTOBUF_VERSION"
+    }
+
     override fun apply(project: Project) {
         with(project) {
             with(plugins) {
@@ -28,22 +39,22 @@ class WSPBConventionPlugin : Plugin<Project> {
                 // generation step. This convention plugin wires everything
                 // around it so app and library modules do not need repeated
                 // setup in their own build scripts.
-                apply(libs.findPlugin("protobuf").get().get().pluginId)
+                apply(PROTOBUF_PLUGIN_ID)
 
-                withId(libs.findPlugin("android-application").get().get().pluginId) {
+                withId(ANDROID_APPLICATION_PLUGIN_ID) {
                     configureProtoSourceSets()
                 }
 
-                withId(libs.findPlugin("android-library").get().get().pluginId) {
+                withId(ANDROID_LIBRARY_PLUGIN_ID) {
                     configureProtoSourceSets()
                 }
             }
 
             configure<ProtobufExtension> {
                 protoc {
-                    // Pin the `protoc` binary through the version catalog so the
-                    // generated classes are reproducible across projects.
-                    artifact = libs.findLibrary("protobuf-protoc").get().get().toString()
+                    // Pin the `protoc` binary so the generated classes are
+                    // reproducible across projects.
+                    artifact = PROTOC_ARTIFACT
                 }
 
                 generateProtoTasks {
@@ -63,7 +74,7 @@ class WSPBConventionPlugin : Plugin<Project> {
             dependencies {
                 // Generated Java lite sources depend on the protobuf lite runtime
                 // at compile time and runtime.
-                add("implementation", libs.findLibrary("protobuf-kotlin-lite").get())
+                add("implementation", PROTOBUF_KOTLIN_LITE_ARTIFACT)
             }
         }
     }
