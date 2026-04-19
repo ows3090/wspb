@@ -8,9 +8,7 @@ plugins {
 
 android {
     namespace = "com.wonseok.wspb.publishedconsumer"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.wonseok.wspb.publishedconsumer"

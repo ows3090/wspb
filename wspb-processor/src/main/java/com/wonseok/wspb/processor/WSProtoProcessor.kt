@@ -39,7 +39,7 @@ class WSProtoProcessor(
     companion object {
         private const val FALLBACK_ANNOTATION_FQ_NAME = "com.wonseok.wspb.annotation.WSProto"
         private val VALID_PROTO_NAME_PATTERN = Regex("^[a-z][a-z0-9_]*$")
-        private val COLLECTION_TYPE_NAMES = setOf("List", "Set", "Array")
+        private val COLLECTION_TYPE_NAMES = setOf("List", "Set", "Array", "Map")
         private val VALID_MAP_KEY_TYPES = setOf("Int", "Short", "Byte", "Long", "Boolean", "String")
     }
 
@@ -161,13 +161,14 @@ class WSProtoProcessor(
                 .mapIndexed { index, property ->
                     buildFieldDefinition(property, index + 1)
                 }
+            if (propertyDefinitions.any { it == null }) return
 
             val protoContent = buildString {
                 append("syntax = \"proto3\";\n\n")
                 append("option java_package = \"${processorOptions.protoJavaPackage}\";\n")
                 append("option java_multiple_files = true;\n\n")
                 append("message $pascalCaseName {\n")
-                propertyDefinitions.forEach(::append)
+                propertyDefinitions.filterNotNull().forEach(::append)
                 append("}")
             }
 
@@ -191,11 +192,11 @@ class WSProtoProcessor(
     private fun buildFieldDefinition(
         property: KSPropertyDeclaration,
         index: Int,
-    ): String {
+    ): String? {
         verboseLog("WSProtoProcessor visitPropertyDeclaration")
 
         val ksType = property.type.resolve()
-        val argType = getProtoTypeName(ksType)
+        val argType = getProtoTypeName(ksType) ?: return null
         val argName = toSnakeCase(property.simpleName.asString())
         return "    $argType $argName = $index;\n"
     }
@@ -225,10 +226,10 @@ class WSProtoProcessor(
     /**
      * Maps supported Kotlin types to their Protobuf equivalents.
      *
-     * Unsupported types fail fast because generating a wrong schema would be
-     * harder to debug than stopping compilation with a clear message.
+     * Unsupported types are reported through KSP so compilation fails without
+     * leaving a partially generated schema file behind.
      */
-    private fun getProtoTypeName(ksType: KSType): String {
+    private fun getProtoTypeName(ksType: KSType): String? {
         val kotlinType = ksType.declaration.simpleName.asString()
         return when (kotlinType) {
             "Int", "Short", "Byte" -> "int32"
@@ -249,28 +250,30 @@ class WSProtoProcessor(
 
             "Map" -> {
                 val args = ksType.arguments
-                val keyType = args[0].type?.resolve()
-                val valueType = args[1].type?.resolve()
+                val keyType = args.getOrNull(0)?.type?.resolve()
+                val valueType = args.getOrNull(1)?.type?.resolve()
                 if (keyType == null || valueType == null) {
                     logger.error("Unable to resolve Map type arguments")
-                    throw IllegalArgumentException("Unable to resolve Map type arguments")
+                    return null
                 }
                 val keyTypeName = keyType.declaration.simpleName.asString()
                 if (keyTypeName !in VALID_MAP_KEY_TYPES) {
                     logger.error("Proto3 map key must be an integral or string type, but was '$keyTypeName'")
-                    throw IllegalArgumentException("Proto3 map key must be an integral or string type, but was '$keyTypeName'")
+                    return null
                 }
                 val valueTypeName = valueType.declaration.simpleName.asString()
-                if (valueTypeName in COLLECTION_TYPE_NAMES || valueTypeName == "Map") {
+                if (valueTypeName in COLLECTION_TYPE_NAMES) {
                     logger.error("Proto3 map value cannot be a collection or map type")
-                    throw IllegalArgumentException("Proto3 map value cannot be a collection or map type")
+                    return null
                 }
-                "map<${getProtoTypeName(keyType)}, ${getProtoTypeName(valueType)}>"
+                val protoKeyType = getProtoTypeName(keyType) ?: return null
+                val protoValueType = getProtoTypeName(valueType) ?: return null
+                "map<$protoKeyType, $protoValueType>"
             }
 
             else -> {
                 logger.error("Unsupported type: $kotlinType")
-                throw IllegalArgumentException("Unsupported type: $kotlinType")
+                null
             }
         }
     }
@@ -279,16 +282,17 @@ class WSProtoProcessor(
      * Resolves the element type for a collection and produces the `repeated`
      * proto field prefix. Rejects nested collections.
      */
-    private fun resolveRepeatedType(ksType: KSType, kotlinType: String): String = ksType.arguments.first().type?.resolve()?.let { type ->
+    private fun resolveRepeatedType(ksType: KSType, kotlinType: String): String? = ksType.arguments.firstOrNull()?.type?.resolve()?.let { type ->
         val elementType = type.declaration.simpleName.asString()
         if (elementType in COLLECTION_TYPE_NAMES) {
             logger.error("Nested collections are not supported in proto3 (found $kotlinType<$elementType<...>>)")
-            throw IllegalArgumentException("Nested collections are not supported in proto3")
+            return null
         }
-        "repeated ${getProtoTypeName(type)}"
+        val protoElementType = getProtoTypeName(type) ?: return null
+        "repeated $protoElementType"
     } ?: run {
         logger.error("Unsupported type: $kotlinType")
-        throw IllegalArgumentException("Unsupported type: $kotlinType")
+        null
     }
 
     override fun finish() {

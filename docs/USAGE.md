@@ -140,6 +140,7 @@ Rules:
 - The generated file is `<name>.proto`.
 - The generated message is PascalCase. `profile_cache` becomes `ProfileCache`.
 - Kotlin properties are converted to snake_case field names.
+- Field numbers are assigned from Kotlin property order, so do not reorder persisted model properties after release.
 - Do not use an annotation name that produces the same name as the Kotlin class. `@WSProto(name = "user_data") data class UserData` is rejected.
 - Do not reuse the same `@WSProto` name in one compilation.
 

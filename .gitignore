@@ -51,7 +51,7 @@ gen-external-apklibs
 *.class
 
 # Compiler caches
-**/.kotlin//
+**/.kotlin/
 **/kotlin-compiler-*
 
 # Log file

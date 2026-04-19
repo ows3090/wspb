@@ -119,6 +119,7 @@ If `wspb.proto.packagePath` is customized, the `.proto` subdirectory changes acc
 - Custom message types and enums are not supported yet.
 - Nested collections are not supported.
 - `Set<T>` is emitted as `repeated`, which does not enforce uniqueness in proto3.
+- Field numbers are assigned from Kotlin property order; reordering properties changes the generated wire format.
 - Nullable-specific schema behavior is not implemented yet.
 
 ## Compatibility

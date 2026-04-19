@@ -220,6 +220,30 @@ class WSProtoProcessorTest {
 
         assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, outcome.result.exitCode)
         assertTrue(outcome.result.messages.contains("Proto3 map key must be an integral or string type"))
+        assertFalse(outcome.hasGeneratedProto("invalid_map_test.proto"))
+    }
+
+    @Test
+    fun `fails for repeated Map fields`() {
+        val outcome = compile(
+            SourceFile.kotlin(
+                "RepeatedMapData.kt",
+                """
+                package test
+
+                import com.wonseok.wspb.annotation.WSProto
+
+                @WSProto(name = "repeated_map_test")
+                data class RepeatedMapData(
+                    val entries: List<Map<String, Int>>,
+                )
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, outcome.result.exitCode)
+        assertTrue(outcome.result.messages.contains("Nested collections are not supported in proto3"))
+        assertFalse(outcome.hasGeneratedProto("repeated_map_test.proto"))
     }
 
     @Test
@@ -242,6 +266,7 @@ class WSProtoProcessorTest {
 
         assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, outcome.result.exitCode)
         assertTrue(outcome.result.messages.contains("Nested collections are not supported in proto3"))
+        assertFalse(outcome.hasGeneratedProto("nested_test.proto"))
     }
 
     @Test
