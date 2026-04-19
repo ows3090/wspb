@@ -5,8 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import com.wonseok.wspb.TestPreference
-import com.wonseok.wspb.UserPreference
 import com.wonseok.wspb.annotation.WSProto
 
 @WSProto(name = "user_preference")
@@ -32,16 +30,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun MainScreen() {
-    // These builders are generated from the @WSProto models declared above.
-    val userPreference = UserPreference.newBuilder()
-        .setId(2)
-        .setName("published")
-        .build()
-    val testPreference = TestPreference.newBuilder()
-        .setTest("maven-ready")
-        .build()
-
     Text(
-        text = "${userPreference.name} / ${testPreference.test}"
+        text = "wspb published sample"
     )
 }

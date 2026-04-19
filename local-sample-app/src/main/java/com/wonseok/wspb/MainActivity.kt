@@ -34,18 +34,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun MainScreen() {
-    // These builders are generated from the @WSProto models declared above.
-    val userPreference = UserPreference.newBuilder()
-        .setId(1)
-        .setName("wonseok")
-        .build()
-    val testPreference = TestPreference.newBuilder()
-        .setTest("proto-ready")
-        .build()
-
     Text(
         // Keep the UI intentionally small. The point of the sample is to show
-        // successful code generation and consumption, not app features.
-        text = "${userPreference.name} / ${testPreference.test}"
+        // successful annotation processing wiring, not app features.
+        text = "wspb local sample"
     )
 }
