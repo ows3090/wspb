@@ -49,8 +49,8 @@ fun Project.projectGradleFile(path: String?): File? {
 }
 fun Project.isRemotePublishRequested(): Boolean =
     gradle.startParameter.taskNames.any { taskName ->
-        val normalized = taskName.lowercase()
-        ("publish" in normalized && "mavenlocal" !in normalized) || normalized == "publishplugins"
+        val normalized = taskName.substringAfterLast(":").lowercase()
+        (normalized.startsWith("publish") && "mavenlocal" !in normalized) || normalized == "publishplugins"
     }
 
 subprojects {

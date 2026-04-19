@@ -1,35 +1,59 @@
 # Contributing
 
-## 기본 원칙
-- 변경은 가능한 한 작고 명확하게 유지합니다.
-- 코드 변경 시 관련 문서도 함께 업데이트합니다.
-- `sample-app`은 라이브러리 사용 예시이므로, 본체 로직과 책임을 분리해 작업합니다.
+## Principles
 
-## 개발 플로우
-1. 브랜치 생성
-2. 코드 수정
-3. 로컬 검증
-4. PR 생성
+- Keep changes small, explicit, and easy to review.
+- Update documentation when behavior, configuration, or user-facing examples change.
+- Change library behavior in the core modules first: `wspb-annotation`, `wspb-processor`, and `wspb-gradle-plugin`.
+- Keep `local-sample-app` and `published-sample-app` as verification harnesses, not as places for library logic.
 
-## 로컬 검증 체크리스트
+## Development Flow
+
+1. Create a focused branch.
+2. Make the code or documentation change.
+3. Run the smallest useful verification command.
+4. Run the broader checks before opening a pull request.
+5. Open a pull request with the change scope and verification results.
+
+## Verification
+
+Use focused checks during development:
+
 ```bash
-./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand
-./gradlew :sample-app:assembleDebug
+./gradlew :wspb-processor:test
+./gradlew :local-sample-app:assembleDebug
+```
+
+Use the full repository check before review:
+
+```bash
+./gradlew publishToMavenLocal --configure-on-demand
+./gradlew :local-sample-app:assembleDebug
+./gradlew :published-sample-app:assembleDebug
 ./gradlew spotlessCheck
 ./gradlew lint
 ```
 
-## 커밋 가이드
-- 작은 단위로 커밋
-- 메시지는 변경 의도가 드러나게 작성
-  - 예: `Add proto mapping for ByteArray`
+Run `publishToMavenLocal --configure-on-demand` before checking `published-sample-app` so the sample resolves the latest local artifacts.
 
-## Pull Request 가이드
-- PR 템플릿 항목을 빠짐없이 채웁니다.
-- 변경 범위와 검증 결과를 명확히 남깁니다.
-- Breaking change가 있다면 영향 범위와 마이그레이션 방법을 반드시 작성합니다.
+## Commit Guide
 
-## 이슈 리포트 가이드
-- 재현 가능한 최소 단계 제공
-- 환경 정보(JDK/Gradle/AGP/Kotlin) 포함
-- 관련 로그 또는 스택트레이스 첨부
+- Prefer small commits that each explain one intent.
+- Use imperative commit messages.
+- Example: `Add proto mapping for ByteArray`.
+
+## Pull Request Guide
+
+- Fill out the pull request template.
+- Describe the changed behavior and why it changed.
+- Include the exact Gradle commands you ran.
+- For breaking changes, include the impact and migration path.
+
+## Issue Reports
+
+Include:
+
+- Minimal reproduction steps.
+- Environment details: JDK, Gradle, Android Gradle Plugin, Kotlin, and KSP versions.
+- Relevant logs or stack traces.
+- Expected behavior and actual behavior.

@@ -32,8 +32,8 @@ jobs:
       - name: Prepare project Gradle directory
         run: mkdir -p .gradle && cp .github/ci-gradle.properties .gradle/gradle.properties
 
-      - name: Publish Plugin to MavenLocal
-        run: ./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand --no-daemon
+      - name: Publish artifacts to MavenLocal
+        run: ./gradlew publishToMavenLocal --configure-on-demand --no-daemon
 
       - name: Check spotless
         run: ./gradlew spotlessCheck --no-configuration-cache
@@ -52,4 +52,4 @@ jobs:
           path: '**/build/reports/lint-results-*.html'
 
       - name: Build app
-        run: ./gradlew :sample-app:assemble -PminifyWithR8=false --no-daemon
+        run: ./gradlew :local-sample-app:assembleDebug :published-sample-app:assembleDebug -PminifyWithR8=false --no-daemon

@@ -7,6 +7,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Unit tests for option parsing.
+ *
+ * These tests stay small on purpose because they validate pure parsing logic
+ * without booting the full KSP compilation environment.
+ */
 class ProcessorOptionsTest {
     @Test
     fun `uses defaults when options are missing`() {
@@ -61,6 +67,10 @@ class ProcessorOptionsTest {
         assertEquals(1, logger.warnings.size)
     }
 
+    /**
+     * Test double that records warnings so assertions can verify fallback
+     * behavior without relying on compiler output text.
+     */
     private class FakeLogger : KSPLogger {
         val warnings = mutableListOf<String>()
 

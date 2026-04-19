@@ -1,36 +1,22 @@
 # wspb
 
-`wspb` generates `.proto` schemas and Protobuf lite sources from Kotlin models by combining an annotation, a KSP processor, and an Android Gradle plugin.
+`wspb` generates Protobuf schemas and Java lite sources for Android projects from Kotlin models annotated with `@WSProto`.
 
-Kotlin model -> `@WSProto` -> KSP `.proto` generation -> Android proto source wiring -> `protoc` Java lite sources
+```text
+Kotlin model -> @WSProto -> KSP-generated .proto -> protobuf Java lite source
+```
 
 ## Modules
 
-- `wspb-annotation`: defines `@WSProto`
-- `wspb-processor`: KSP processor that generates `.proto` files
-- `wspb-gradle-plugin`: Android Gradle plugin that wires generated proto directories into the build
-- `sample-app`: example consumer app for integration verification
-
-## Planned Public Coordinates
-
-These are the coordinates intended for published releases:
-
-```kotlin
-dependencies {
-    implementation("io.github.ows3090:wspb-annotation:1.0.1")
-    ksp("io.github.ows3090:wspb-processor:1.0.1")
-}
-```
-
-```kotlin
-plugins {
-    id("io.github.ows3090.wspb.proto") version "1.0.1"
-}
-```
+- `wspb-annotation`: defines the `@WSProto` annotation.
+- `wspb-processor`: KSP processor that generates `.proto` files.
+- `wspb-gradle-plugin`: Android Gradle plugin that connects generated `.proto` files to the protobuf Gradle plugin.
+- `local-sample-app`: sample app that consumes the local project modules directly.
+- `published-sample-app`: sample app that consumes the published Maven coordinates, usually through `mavenLocal()` during local verification.
 
 ## Quick Start
 
-The example below shows the intended public-consumer setup after the first release is published.
+Apply the Android, Kotlin, KSP, and wspb plugins:
 
 ```kotlin
 plugins {
@@ -39,12 +25,18 @@ plugins {
     id("com.google.devtools.ksp")
     id("io.github.ows3090.wspb.proto") version "1.0.1"
 }
+```
 
+Add the annotation and processor:
+
+```kotlin
 dependencies {
     implementation("io.github.ows3090:wspb-annotation:1.0.1")
     ksp("io.github.ows3090:wspb-processor:1.0.1")
 }
 ```
+
+Declare a model:
 
 ```kotlin
 import com.wonseok.wspb.annotation.WSProto
@@ -56,7 +48,23 @@ data class UserData(
 )
 ```
 
-## KSP Options
+Build the app. `wspb` generates:
+
+- `user_preference.proto`
+- `UserPreference` Java lite classes
+
+The generated class can then be used from Kotlin or Java:
+
+```kotlin
+val userPreference = UserPreference.newBuilder()
+    .setId(1)
+    .setName("wonseok")
+    .build()
+```
+
+## Configuration
+
+Optional KSP arguments:
 
 ```kotlin
 ksp {
@@ -66,46 +74,70 @@ ksp {
 }
 ```
 
-- `wspb.proto.packagePath`: output subdirectory for generated `.proto` files
-- `wspb.proto.javaPackage`: `option java_package` written into generated `.proto` files
-- `wspb.processor.verbose`: enables processor warning logs
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `wspb.proto.packagePath` | `proto/com/wonseok/wspb` | Resource path where generated `.proto` files are written. |
+| `wspb.proto.javaPackage` | `com.wonseok.wspb` | Value written to `option java_package` in generated `.proto` files. |
+| `wspb.processor.verbose` | `false` | Enables extra processor logs. Accepts only `true` or `false`. |
 
-Default values:
+## Type Mapping
 
-- `wspb.proto.packagePath = proto/com/wonseok/wspb`
-- `wspb.proto.javaPackage = com.wonseok.wspb`
-- `wspb.processor.verbose = false`
+| Kotlin type | Proto type |
+| --- | --- |
+| `Int`, `Short`, `Byte` | `int32` |
+| `Long` | `int64` |
+| `Float` | `float` |
+| `Double` | `double` |
+| `Boolean` | `bool` |
+| `String` | `string` |
+| `ByteArray` | `bytes` |
+| `List<T>`, `Set<T>`, `Array<T>` | `repeated <mapped T>` |
+| `Map<K, V>` | `map<key, value>` |
+
+`Map` keys must be `Int`, `Short`, `Byte`, `Long`, `Boolean`, or `String`. `Map` values cannot be another collection or map.
+
+## Naming Rules
+
+- `@WSProto(name = "...")` must match `[a-z][a-z0-9_]*`.
+- The annotation name becomes the `.proto` file name.
+- Snake case annotation names become PascalCase message names. For example, `user_preference` becomes `UserPreference`.
+- Kotlin property names become snake_case proto field names.
+- The generated message name must be different from the Kotlin class name to avoid same-package class collisions.
+- Each `@WSProto` name must be unique in a compilation.
+
+## Generated Output
+
+Default locations:
+
+- KSP `.proto` files: `build/generated/ksp/<variant>/resources/proto/com/wonseok/wspb`
+- Protobuf Java lite sources: `build/generated/sources/proto/<variant>/java`
+
+If `wspb.proto.packagePath` is customized, the `.proto` subdirectory changes accordingly.
+
+## Current Limitations
+
+- Custom message types and enums are not supported yet.
+- Nested collections are not supported.
+- `Set<T>` is emitted as `repeated`, which does not enforce uniqueness in proto3.
+- Field numbers are assigned from Kotlin property order; reordering properties changes the generated wire format.
+- Nullable-specific schema behavior is not implemented yet.
 
 ## Compatibility
 
-Current repo baseline:
+Current repository baseline:
 
 - JDK 21
 - Kotlin 2.0.21
 - KSP 2.0.21-1.0.27
-- AGP 8.13.1
-
-These are the versions currently validated in this repository. A broader compatibility policy will be documented after the first public release.
-
-## Limitations
-
-- Supported field types are limited to primitives, `String`, `ByteArray`, `List`, `Set`, and `Array`
-- Custom classes, enums, and nullable-specific mapping are not yet supported
-- The generated proto path defaults to the repository package unless overridden with KSP options
+- Android Gradle Plugin 8.13.1
+- Protobuf Gradle Plugin 0.9.5
+- Protobuf 4.29.2
 
 ## Local Development
 
-Inside this repository, the safest verification flow is:
+For contribution workflow and repository verification commands, see [Contributing](CONTRIBUTING.md).
 
-```bash
-./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand
-./gradlew :sample-app:assembleDebug
-./gradlew :wspb-processor:test
-./gradlew spotlessCheck
-./gradlew lint
-```
-
-## Docs
+## Documentation
 
 - [Usage Guide](docs/USAGE.md)
 - [Contributing](CONTRIBUTING.md)
