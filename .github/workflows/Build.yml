@@ -32,6 +32,9 @@ jobs:
       - name: Prepare project Gradle directory
         run: mkdir -p .gradle && cp .github/ci-gradle.properties .gradle/gradle.properties
 
+      - name: Publish Gradle plugin to MavenLocal
+        run: ./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand --no-daemon
+
       - name: Publish artifacts to MavenLocal
         run: ./gradlew publishToMavenLocal --configure-on-demand --no-daemon
 

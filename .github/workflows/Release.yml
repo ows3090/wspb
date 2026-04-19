@@ -81,8 +81,11 @@ jobs:
           GRADLE_PUBLISH_SECRET=${{ secrets.GRADLE_PUBLISH_SECRET }}
           EOF
 
-      - name: Publish Plugin to MavenLocal
+      - name: Publish Gradle plugin to MavenLocal
         run: ./gradlew :wspb-gradle-plugin:publishToMavenLocal --configure-on-demand --no-daemon -PWSPB_VERSION="${WSPB_VERSION}"
+
+      - name: Publish artifacts to MavenLocal
+        run: ./gradlew publishToMavenLocal --configure-on-demand --no-daemon -PWSPB_VERSION="${WSPB_VERSION}"
 
       - name: Verify release build
         run: |
@@ -90,7 +93,8 @@ jobs:
             spotlessCheck \
             lint \
             :wspb-processor:test \
-            :sample-app:assemble \
+            :local-sample-app:assembleDebug \
+            :published-sample-app:assembleDebug \
             -PminifyWithR8=false \
             -PWSPB_VERSION="${WSPB_VERSION}" \
             --no-daemon
